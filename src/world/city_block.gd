@@ -63,6 +63,10 @@ const NEON_BUILDINGS := [0, 2, 5]   # which ring slots get a neon sign
 
 
 func _ready() -> void:
+	# Publish the block under the canonical name (AGENTS.md §1.1) so systems
+	# resolve it by name instead of walking the tree. Only a real scene node
+	# publishes, so a test double cannot claim the name.
+	GameServices.publish("CityBlock", &"block", self)
 	var rng: Object = SeededRNGScript.new()
 	rng.seed(gen_seed)
 	_build_ground()

@@ -27,6 +27,7 @@ var _alive: Array[Node] = []
 var _cooldowns: Array[float] = []   # one slot per collected power-up
 var _player: Node3D = null
 var _rng: Object = null
+var _block_spawns: Array[Vector3] = []
 
 
 func _ready() -> void:
@@ -88,14 +89,58 @@ func _spawn_one() -> void:
 	_cooldowns.append(0.0)
 
 
-## Posición aleatoria determinista cuando hay SeededRNG disponible.
+## Where the next power-up appears.
+##
+## The block publishes hand-placed spawn markers (city_block.spawn_positions());
+## using them puts pickups on the streets and sidewalks instead of inside the
+## buildings or off the edge of the world. The marker set is cached on first use
+## and falls back to a deterministic scatter inside spawn_radius when no block
+## publishes any, so the spawner still works headless and in isolation.
 func _random_position() -> Vector3:
+	if _block_spawns.is_empty():
+		_block_spawns = _resolve_block_spawns()
+	if not _block_spawns.is_empty():
+		var pick: int = _rng_randi(_block_spawns.size())
+		return _block_spawns[pick]
 	var r := spawn_radius
 	if _rng != null and _rng.has_method("randf_range"):
 		return Vector3(
 			_rng.randf_range(-r, r), 0.8, _rng.randf_range(-r, r)
 		)
 	return Vector3(randf_range(-r, r), 0.8, randf_range(-r, r))
+
+
+## Deterministic [0, bound) index. Uses the injected SeededRNG when present so
+## spawn placement is reproducible for a fixed seed (AGENTS.md §0.4).
+func _rng_randi(bound: int) -> int:
+	if bound <= 0:
+		return 0
+	if _rng != null and _rng.has_method("randi_range"):
+		return int(_rng.randi_range(0, bound - 1))
+	return randi_range(0, bound - 1)
+
+
+## Asks the city block for its markers. Found through the service registry when
+## the block registered itself, otherwise by walking the scene tree, so this
+## works both under main.tscn and in a test that only instantiates the block.
+func _resolve_block_spawns() -> Array[Vector3]:
+	var block: Object = null
+	var services: Object = _resolve(&"GameServices")
+	if services != null and services.has_method("lookup"):
+		block = services.lookup(&"block")
+	if block == null or not block.has_method("spawn_positions"):
+		# Not published under a canonical name: walk the scene. The root is
+		# searched (not just current_scene) so this also resolves when the block
+		# was instanced by a test rather than by main.tscn.
+		var tree := get_tree()
+		if tree != null:
+			block = tree.root.find_child("CityBlock", true, false)
+	if block == null or not block.has_method("spawn_positions"):
+		return []
+	var points: Array = block.spawn_positions()
+	if points.is_empty():
+		return []
+	return points
 
 
 func _tick_cooldowns(delta: float) -> void:
@@ -154,7 +199,12 @@ func _resolve(node_name: StringName) -> Object:
 
 func _resolve_player() -> Node3D:
 	var services: Object = _resolve(&"GameServices")
-	if services != null and services.has_method("get"):
+	# NOTE: the locator API is lookup()/resolve(), not get() — `get` is a
+	# native Object method that would collide (game_services.gd documents this).
+	# Asking for "get" made this branch never fire, so the player was only ever
+	# found by the /root/Player fallback, which does not exist (the player lives
+	# under World/), and power-ups never knew where the player was.
+	if services != null and services.has_method("lookup"):
 		var found: Object = services.lookup(&"player")
 		if found is Node3D:
 			return found as Node3D
