@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StylePack" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/styles/style_pack.gd" id="1_pack"]
+[ext_resource type="Script" path="res://src/styles/style_postfx.gd" id="2_postfx"]
+
+[sub_resource type="Resource" id="StylePostFX_1"]
+script = ExtResource("2_postfx")
+bloom_intensity = 0.9
+chromatic = 0.35
+vignette = 0.3
+scanline = 0.0
+saturation = 1.3
+desaturate = 0.0
+glow_strength = 1.6
+glow_bloom = 0.25
+
+[resource]
+script = ExtResource("1_pack")
+id = &"NEON_DRIFT"
+display_name = "Neon Drift"
+sky_top = Color(0.05, 0.02, 0.15, 1)
+sky_horizon = Color(0.9, 0.1, 0.6, 1)
+fog_color = Color(0.15, 0.02, 0.2, 1)
+fog_density = 0.02
+sun_color = Color(0.2, 0.9, 1, 1)
+sun_energy = 0.8
+ambient_color = Color(0.4, 0.1, 0.6, 1)
+ambient_energy = 0.5
+material_mode = &"SHADER_UNIFORM"
+postfx = SubResource("StylePostFX_1")
+fov_override = 80.0
+music_state = &"PEAK"
+transition_s = 0.4
+revert_to_base_on_end = true
+style_uniforms = {
+"u_style_top": Color(0.05, 0.02, 0.15, 1),
+"u_style_saturation": 1.3,
+"u_style_scanline": 0.0
+}

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StylePack" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/styles/style_pack.gd" id="1_pack"]
+[ext_resource type="Script" path="res://src/styles/style_postfx.gd" id="2_postfx"]
+
+[sub_resource type="Resource" id="StylePostFX_1"]
+script = ExtResource("2_postfx")
+bloom_intensity = 0.35
+chromatic = 0.15
+vignette = 0.3
+scanline = 0.5
+saturation = 0.7
+desaturate = 0.0
+glow_strength = 1.0
+glow_bloom = 0.05
+
+[resource]
+script = ExtResource("1_pack")
+id = &"BIT_CRUSH"
+display_name = "Bit Crush"
+sky_top = Color(0.1, 0.1, 0.35, 1)
+sky_horizon = Color(0.3, 0.3, 0.7, 1)
+fog_color = Color(0.15, 0.15, 0.4, 1)
+fog_density = 0.01
+sun_color = Color(0.8, 0.8, 1, 1)
+sun_energy = 1.0
+ambient_color = Color(0.3, 0.3, 0.6, 1)
+ambient_energy = 0.6
+material_mode = &"SHADER_UNIFORM"
+postfx = SubResource("StylePostFX_1")
+fov_override = 75.0
+music_state = &"PEAK"
+transition_s = 0.4
+revert_to_base_on_end = true
+style_uniforms = {
+"u_style_top": Color(0.1, 0.1, 0.35, 1),
+"u_style_saturation": 0.7,
+"u_style_scanline": 0.5
+}

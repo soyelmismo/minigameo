@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StylePack" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/styles/style_pack.gd" id="1_pack"]
+[ext_resource type="Script" path="res://src/styles/style_postfx.gd" id="2_postfx"]
+
+[sub_resource type="Resource" id="StylePostFX_1"]
+script = ExtResource("2_postfx")
+bloom_intensity = 0.3
+chromatic = 0.1
+vignette = 0.45
+scanline = 0.0
+saturation = 0.15
+desaturate = 0.0
+glow_strength = 0.8
+glow_bloom = 0.1
+
+[resource]
+script = ExtResource("1_pack")
+id = &"INK_NOIR"
+display_name = "Ink Noir"
+sky_top = Color(0.08, 0.08, 0.1, 1)
+sky_horizon = Color(0.75, 0.75, 0.8, 1)
+fog_color = Color(0.3, 0.3, 0.33, 1)
+fog_density = 0.03
+sun_color = Color(1, 1, 1, 1)
+sun_energy = 1.0
+ambient_color = Color(0.5, 0.5, 0.55, 1)
+ambient_energy = 0.4
+material_mode = &"SHADER_UNIFORM"
+postfx = SubResource("StylePostFX_1")
+fov_override = 70.0
+music_state = &"TENSION"
+transition_s = 0.4
+revert_to_base_on_end = true
+style_uniforms = {
+"u_style_top": Color(0.08, 0.08, 0.1, 1),
+"u_style_saturation": 0.15,
+"u_style_scanline": 0.0
+}

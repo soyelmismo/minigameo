@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ImpactFrame" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/juice/impact_frame.gd" id="1_frame"]
+
+[resource]
+script = ExtResource("1_frame")
+hitstop_s = 0.12
+time_scale = 0.05
+shake_amplitude = 0.5
+shake_frequency = 24.0
+shake_duration_s = 0.5
+fov_punch = -10.0
+chromatic_pulse = 0.8
+flash_color = Color(1, 1, 1, 1)
+flash_alpha = 0.4
+desaturate = 0.4
+model_freeze = false
