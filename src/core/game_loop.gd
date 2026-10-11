@@ -13,6 +13,13 @@ func _physics_process(delta: float) -> void:
 	var match_mgr: Object = _resolve(&"MatchManager")
 	if match_mgr != null and match_mgr.has_method("advance"):
 		match_mgr.advance(delta)
+	# The roulette advances while the match is in the ROULETTE state and emits
+	# roulette_result(id); MatchManager listens and starts the micro-game
+	# (§6.2/§6.6). Without this tick the roulette never resolves and the
+	# micro-game would only ever start through the manager's fallback.
+	var roulette: Object = _resolve(&"RouletteController")
+	if roulette != null and roulette.has_method("update"):
+		roulette.update(delta)
 	var minigames: Object = _resolve(&"MinigameDirector")
 	if minigames != null and minigames.has_method("update"):
 		minigames.update(delta)

@@ -70,6 +70,25 @@ func score_minigame(base: int, time_left_s: float) -> int:
 	return gain
 
 
+## A finished micro-game reported through the MinigameResult contract
+## (scaffold §7.4). This is the adapter between the minigame's result and the
+## director's own rules, so a micro-game never has to know how scoring works:
+## it reports success/base/time bonus, the director decides the multiplier.
+func add_minigame_result(result: MinigameResult) -> int:
+	if result == null:
+		return 0
+	if result.success:
+		register_success()
+	else:
+		break_combo()
+	# The multiplier applies to the base only; the time bonus is already
+	# derived from the archetype's ObjectiveRecipe and joins unscaled.
+	var gain := int(round(float(maxi(0, result.base_score)) * _multiplier))
+	gain += maxi(0, result.time_bonus)
+	add_points(gain)
+	return gain
+
+
 func reset() -> void:
 	total_score = 0
 	combo = 0

@@ -39,7 +39,23 @@ func _ready() -> void:
 		push_warning("MatchManager: config .tres missing, using defaults")
 	_time_left = config.match_length_s
 	_register_self()
+	_connect_event_bus()
 	transition_to(State.TITLE)
+
+
+## The roulette result starts the micro-game (scaffold §6.2/§6.6). Wired
+## through the EventBus so the roulette never needs to know the state machine
+## exists (§1.1: no direct cross-system references). The connection is opened
+## on demand and always closed on exit, so nothing dangles after teardown.
+func _connect_event_bus() -> void:
+	if EventBus.roulette_result.is_connected(_on_roulette_result):
+		return
+	EventBus.roulette_result.connect(_on_roulette_result)
+
+
+func _on_roulette_result(id: StringName) -> void:
+	_pending_minigame_id = id
+	start_minigame(id)
 
 
 func _register_self() -> void:

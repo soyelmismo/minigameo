@@ -244,8 +244,8 @@ func _resolve_player() -> Node3D:
 
 func _apply_style_and_music(meta: MinigameMetadata) -> void:
 	var style: Object = _resolve(SERVICE_STYLE)
-	if style != null and meta.style_pack_id != &"" and style.has_method("apply_pack_by_id"):
-		style.apply_pack_by_id(meta.style_pack_id)
+	if style != null and meta.style_pack_id != &"" and style.has_method("apply_pack_id"):
+		style.apply_pack_id(meta.style_pack_id)
 	var music: Object = _resolve(SERVICE_MUSIC)
 	if music != null and meta.music_state != &"" and music.has_method("play_music_state"):
 		music.play_music_state(meta.music_state, 0.9)

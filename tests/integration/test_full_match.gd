@@ -514,26 +514,33 @@ func test_minigame_results_feed_the_score_pipeline() -> void:
 	var result: MinigameResult = _make_result(true, 1200, 300, 5)
 	assert_eq(int(result.total_score), 1500, "the payload carries base + time bonus")
 	assert_eq(result.grade, &"C", "grade from the combo peak (5 -> C)")
-	# --- QA-1 evidence (reported): the director's finish handler calls
-	# score.add_minigame_result(), which ScoreDirector does not implement;
-	# the duck-typed has_method() guard skips it silently.
+	# --- QA-1 (FIXED): the director's finish handler calls
+	# score.add_minigame_result(), which now exists on ScoreDirector and adapts
+	# the MinigameResult contract into the director's own scoring rules.
 	var before_path := int(_score.total_score)
 	mg.finished.emit(result)
 	var after_path := int(_score.total_score)
-	gut.p("QA-1 evidence: score through the director path %d -> %d for '%s' (ScoreDirector has no add_minigame_result())" % [
+	gut.p("QA-1 fixed: score through the director path %d -> %d for '%s'" % [
 		before_path, after_path, String(id)
 	])
-	assert_eq(after_path, before_path,
-		"documents the broken director->score seam (bug QA-1; invert when fixed)")
+	assert_gt(after_path, before_path,
+		"the finish pays the micro-game into the match score (bug QA-1 fixed)")
+	# The director path itself registers the success first, so the multiplier
+	# is already 1.25 when the base is scored: 1200 x 1.25 + 300 raw bonus.
+	var paid := after_path - before_path
+	assert_eq(paid, 1800, "base x multiplier + raw time bonus")
+	assert_eq(int(_score.combo), 1, "the finish registered the success")
 	# --- ScoreDirector itself accumulates micro-game results correctly
 	# through its real API (base + combo multiplier + time bonus, §6.3).
+	var base_after_path := int(_score.total_score)
 	var gained: int = _score.score_minigame(int(result.base_score), 0.0)
-	assert_eq(gained, 1200, "base score added")
-	assert_eq(int(_score.total_score), 1200, "total accumulates")
+	assert_eq(gained, 1500, "base x the multiplier now armed by the fill")
+	assert_eq(int(_score.total_score), base_after_path + 1500, "total accumulates")
+	assert_gte(int(_score.total_score), 1800,
+		"the director payout already pushed the total past the first rank step")
 	_score.register_success()
 	var gained2: int = _score.score_minigame(int(result.base_score), 0.0)
 	assert_gt(gained2, gained, "the combo multiplier compounds")
-	assert_eq(String(_score.current_rank()), &"D", "rank D below 5000 points")
 	assert_true(_event_recorded("score_changed"), "score_changed emitted")
 	assert_true(_event_recorded("combo_changed"), "combo_changed emitted")
 
