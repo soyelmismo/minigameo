@@ -1,6 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://src/bootstrap/main.gd" id="main_gd"]
+[ext_resource type="Environment" path="res://assets/shaders/base_env.tres" id="base_env"]
 [ext_resource type="PackedScene" path="res://src/world/city_block.tscn" id="city_block_tscn"]
 [ext_resource type="PackedScene" path="res://src/player/player_avatar.tscn" id="player_tscn"]
 [ext_resource type="PackedScene" path="res://src/ui/hud/hud.tscn" id="hud_tscn"]
@@ -11,15 +12,22 @@ script = ExtResource("main_gd")
 
 [node name="World" type="Node3D" parent="."]
 
+[node name="WorldEnvironment" type="WorldEnvironment" parent="World"]
+environment = ExtResource("base_env")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="World"]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 8, 12, 6)
+shadow_enabled = true
+
 [node name="CityBlock" parent="World" instance=ExtResource("city_block_tscn")]
 
 [node name="Player" parent="World" instance=ExtResource("player_tscn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
-[node name="Camera" type="Camera3D" parent="World"]
+[node name="Camera3D" type="Camera3D" parent="World"]
 transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 8, 14)
 current = true
 
 [node name="HUD" parent="." instance=ExtResource("hud_tscn")]
 
-[node name="ScreenEffects" parent="." instance=ExtResource("effects_tscn")]
+[node name="Effects" parent="." instance=ExtResource("effects_tscn")]

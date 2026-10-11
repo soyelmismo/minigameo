@@ -18,7 +18,14 @@ func _ready() -> void:
 
 
 func _find_postfx() -> void:
-	_postfx = GameServices.lookup(&"postfx")
+	# Resolve by path: the autoload global identifier is not available in
+	# every compile context (--script probes), the node path always is.
+	var tree := get_tree()
+	if tree == null:
+		return
+	var services: Object = tree.root.get_node_or_null("/root/GameServices") as Object
+	if services != null and services.has_method("lookup"):
+		_postfx = services.lookup(&"postfx")
 
 
 func _process(_delta: float) -> void:

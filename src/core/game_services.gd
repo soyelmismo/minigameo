@@ -28,6 +28,12 @@ const PLAYER := &"player"
 
 var _services: Dictionary[StringName, Object] = {}
 
+func _ready() -> void:
+	# Self-register under &"core": every system resolves the locator via
+	# lookup(&"core") and then registers itself there (§6 contract). Without
+	# this self-registration every player of that pattern fails silently.
+	_services[CORE] = self
+
 
 ## Register a service under its canonical name. Later registrations win.
 func register(service_name: StringName, instance: Object) -> void:
