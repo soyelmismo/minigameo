@@ -14,6 +14,9 @@ extends Node
 ## logic (§1.3). The scene transform mirrors this default; the export is
 ## the single tunable source.
 @export var player_spawn_position: Vector3 = Vector3(0.0, 1.0, 0.0)
+## Hard ceiling on how many distinct micro-games a single match runs before
+## the roulette refuses to spin. Tuning data, not a magic number (§1.3).
+@export var max_minigames_per_match: int = 30
 
 const TITLE_SCENE := "res://src/ui/screens/title_screen.tscn"
 const PAUSE_SCENE := "res://src/ui/screens/pause_menu.tscn"
@@ -27,6 +30,8 @@ const RESULTS_SCENE := "res://src/ui/screens/results_screen.tscn"
 var _title: TitleScreen = null
 var _pause: PauseMenu = null
 var _results: ResultsScreen = null
+## True once a match has started and before it ends: the pause key is live.
+var _match_live: bool = false
 
 
 func _ready() -> void:
@@ -69,8 +74,28 @@ func _build_screens() -> void:
 		_title.play_pressed.connect(_on_play_pressed)
 	if _pause != null:
 		_pause.quit_pressed.connect(_on_quit_pressed)
-	if _results != null:
-		_results.play_again_pressed.connect(_on_play_again_pressed)
+		_pause.resume_pressed.connect(_on_pause_resumed)
+		_pause.visible = false
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Escape / gamepad B is the pause key (§8: fully playable without the
+	# mouse). Only live during a match: pausing on the title screen would
+	# freeze the menu behind it.
+	if not _match_live or _pause == null:
+		return
+	if not event.is_action_pressed(&"ui_cancel"):
+		return
+	# The menu consumes Escape itself to resume; here we OPEN it.
+	if _pause.visible:
+		return
+	_pause.open()
+	get_viewport().set_input_as_handled()
+
+
+func _on_pause_resumed() -> void:
+	if _pause != null:
+		_pause.visible = false
 
 
 func _add_screen(path: String) -> Node:
@@ -112,6 +137,7 @@ func _on_quit_pressed() -> void:
 
 
 func _on_match_started() -> void:
+	_match_live = true
 	if _title != null:
 		_title.visible = false
 	if _results != null:
@@ -119,11 +145,15 @@ func _on_match_started() -> void:
 
 
 func _on_match_time_up() -> void:
+	_match_live = false
+	if _pause != null:
+		_pause.visible = false
 	if _results != null:
 		_results.visible = true
 
 
 func _on_match_reset() -> void:
+	_match_live = false
 	if _pause != null:
 		_pause.visible = false
 	if _results != null:

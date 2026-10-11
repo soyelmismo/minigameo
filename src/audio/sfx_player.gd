@@ -14,7 +14,12 @@ extends Node
 ## autoloads; the MusicDirector is asked to duck via the injected reference
 ## (duck-typed), and that reference may be null.
 
-## Max simultaneous voices (scaffold §15 budget: < 32).
+## Absolute safety ceiling: the pool can never exceed this no matter what a
+## config says, so a typo in a .tres cannot melt the audio thread.
+const MAX_VOICES_HARD_LIMIT: int = 64
+## Fallback voice cap. The authoritative budget lives in GameConfig.tres
+## (§1.3 data, not code): this constant is only used when no config resolves,
+## and _refresh_from_config() overwrites it as soon as one exists.
 const DEFAULT_MAX_VOICES: int = 32
 const PITCH_RAND: float = 0.05        # ±5%
 const VOLUME_RAND_DB: float = 1.5     # ±1.5 dB
@@ -22,7 +27,7 @@ const VOLUME_RAND_DB: float = 1.5     # ±1.5 dB
 var library: SFXLibrary = null
 var max_voices: int = DEFAULT_MAX_VOICES:
 	set(value):
-		max_voices = clampi(value, 1, DEFAULT_MAX_VOICES)
+		max_voices = clampi(value, 1, MAX_VOICES_HARD_LIMIT)
 
 ## Optional duck target (MusicDirector). Null-safe duck calls.
 var music_director: Object = null
@@ -37,7 +42,26 @@ var _group_caps: Dictionary = {}       # StringName -> int (data-driven)
 var _playing_count: int = 0
 
 func _ready() -> void:
+	_refresh_from_config()
 	_build_pool()
+
+
+## The voice budget is data (§1.3): read it from GameConfig.tres so tuning the
+## .tres actually retunes the mixer. A value that was set explicitly (a test,
+## or a runtime change) wins over the file, so _ready() never overwrites it.
+func _refresh_from_config() -> void:
+	if max_voices != DEFAULT_MAX_VOICES:
+		return
+	var cfg: Object = GameServices.lookup(&"config")
+	var from_config: Variant = null
+	if cfg != null and cfg.get("sfx_max_voices") != null:
+		from_config = cfg.sfx_max_voices
+	else:
+		var loaded := load("res://src/core/config/game_config.tres")
+		if loaded != null and loaded.get("sfx_max_voices") != null:
+			from_config = loaded.sfx_max_voices
+	if from_config != null:
+		max_voices = int(from_config)
 
 ## --- Pool ---
 
