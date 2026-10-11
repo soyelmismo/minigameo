@@ -1,4 +1,3 @@
-class_name EventBus
 extends Node
 ## EventBus — global signal bus (scaffold §6.1).
 ##

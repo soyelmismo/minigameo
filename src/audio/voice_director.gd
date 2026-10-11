@@ -1,4 +1,3 @@
-class_name VoiceDirector
 extends Node
 ## Locutor arcade VO director (scaffold.md §6.10 / §2).
 ##

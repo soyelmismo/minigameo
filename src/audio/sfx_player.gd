@@ -1,4 +1,3 @@
-class_name SFXPlayer
 extends Node
 ## Pooled SFX voice player (scaffold.md §10.2 / §6.8).
 ##

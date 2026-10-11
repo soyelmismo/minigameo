@@ -90,15 +90,14 @@ func _break_chain(reason: StringName) -> void:
 		finish_fail(reason)
 
 
-func _is_press(event: InputEvent) -> bool:
-	if event is InputEventMouseButton:
-		return (event as InputEventMouseButton).pressed
-	if event is InputEventKey:
-		return (event as InputEventKey).pressed
-	if event is InputEventJoypadButton:
-		return (event as InputEventJoypadButton).pressed
+func _is_press(input_event: InputEvent) -> bool:
+	if input_event is InputEventMouseButton:
+		return (input_event as InputEventMouseButton).pressed
+	if input_event is InputEventKey:
+		return (input_event as InputEventKey).pressed
+	if input_event is InputEventJoypadButton:
+		return (input_event as InputEventJoypadButton).pressed
 	return false
-
 
 func teardown() -> void:
 	super.teardown()

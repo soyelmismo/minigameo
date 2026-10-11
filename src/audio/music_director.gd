@@ -1,4 +1,3 @@
-class_name MusicDirector
 extends Node
 ## Dynamic music director (scaffold.md §6.9 / §10.2).
 ##
@@ -99,7 +98,7 @@ func duck(amount_db: float, duration_s: float) -> void:
 	duck_db = amount_db
 	_duck_active = true
 	if duration_s > 0.0:
-		_duck_hold_s = duration_s
+		duck_hold_s = duration_s
 	_apply_duck()
 
 func unduck(fade_s: float = -1.0) -> void:
@@ -112,8 +111,8 @@ func unduck(fade_s: float = -1.0) -> void:
 ## from the director's update; tests call it with fake deltas.
 func tick(delta: float) -> void:
 	_time += delta
-	var seconds_per_beat: float = 60.0 / bpm
-	var total_beats: int = int(_time / seconds_per_beat)
+	var spb: float = 60.0 / bpm
+	var total_beats: int = int(_time / spb)
 	_beat_index = total_beats
 	var bar: int = total_beats / BEATS_PER_BAR
 	if _pending_switch and bar > _last_switch_bar and bar % BARS_PER_SWITCH == 0:

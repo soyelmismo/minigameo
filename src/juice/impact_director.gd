@@ -1,4 +1,3 @@
-class_name ImpactDirector
 extends Node
 ## ImpactDirector — the single juice API (scaffold §6.5, §10.1).
 ##

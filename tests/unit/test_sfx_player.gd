@@ -18,7 +18,7 @@ func _silent_stream() -> AudioStreamGenerator:
 func test_voice_cap_blocks_overflow() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"gen", {"group": &"world", "priority": 5})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 2
 	add_child_autofree(player)
@@ -37,7 +37,7 @@ func test_voice_cap_blocks_overflow() -> void:
 	player.stop_all()
 
 func test_default_max_voices_is_32() -> void:
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	add_child_autofree(player)
 	assert_eq(player.max_voices, 32, "scaffold §15 budget default")
 
@@ -47,7 +47,7 @@ func test_lowest_priority_is_stolen() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"low", {"group": &"world", "priority": 1})
 	lib.register(&"high", {"group": &"world", "priority": 50})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 1
 	add_child_autofree(player)
@@ -69,7 +69,7 @@ func test_oldest_stolen_on_equal_priority() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"a", {"group": &"world", "priority": 5})
 	lib.register(&"b", {"group": &"world", "priority": 5})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 1
 	add_child_autofree(player)
@@ -88,7 +88,7 @@ func test_higher_priority_never_stolen_by_lower() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"high", {"group": &"world", "priority": 50})
 	lib.register(&"low", {"group": &"world", "priority": 1})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 1
 	add_child_autofree(player)
@@ -105,7 +105,7 @@ func test_higher_priority_never_stolen_by_lower() -> void:
 func test_pitch_and_volume_randomization_bounds() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"rand", {"group": &"ui", "priority": 5, "volume_db": -3.0})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 8
 	add_child_autofree(player)
@@ -124,7 +124,7 @@ func test_pitch_and_volume_randomization_bounds() -> void:
 func test_group_concurrency_cap() -> void:
 	var lib := SFXLibrary.new()
 	lib.register(&"g", {"group": &"world", "priority": 5})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	player.max_voices = 8
 	player.set_group_cap(&"world", 1)
@@ -141,21 +141,21 @@ func test_missing_stream_never_crashes() -> void:
 	var lib := SFXLibrary.new()
 	# Entry with an empty path (no asset yet).
 	lib.register(&"missing", {"group": &"world", "priority": 5})
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = lib
 	add_child_autofree(player)
 	var v: Variant = player.play(&"missing")
 	assert_null(v, "missing stream -> null, no crash")
 
 func test_unknown_id_never_crashes() -> void:
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	player.library = SFXLibrary.new()
 	add_child_autofree(player)
 	var v: Variant = player.play(&"does_not_exist")
 	assert_null(v, "unknown id -> null, no crash")
 
 func test_null_library_never_crashes() -> void:
-	var player := SFXPlayer.new()
+	var player: Object = load("res://src/audio/sfx_player.gd").new()
 	add_child_autofree(player)
 	var v: Variant = player.play(&"anything")
 	assert_null(v, "no library -> null, no crash")

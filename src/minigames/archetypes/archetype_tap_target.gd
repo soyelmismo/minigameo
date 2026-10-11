@@ -68,9 +68,11 @@ func _try_hit_at(screen_pos: Vector2) -> void:
 		return
 	var from: Vector3 = camera.project_ray_origin(screen_pos)
 	var dir: Vector3 = camera.project_ray_normal(screen_pos)
-	var space := get_world_3d().direct_space_state
+	var space := camera.get_world_3d().direct_space_state if camera.get_world_3d() != null else null
 	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 200.0)
-	var result := space.intersect_ray(query)
+	var result := {}
+	if space != null:
+		result = space.intersect_ray(query)
 	if not result.is_empty():
 		var collider: Object = result.get("collider")
 		var node: Node = collider as Node

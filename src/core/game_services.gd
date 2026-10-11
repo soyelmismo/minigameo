@@ -1,4 +1,3 @@
-class_name GameServices
 extends Node
 ## GameServices — service locator (scaffold §6).
 ##

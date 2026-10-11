@@ -1,0 +1,49 @@
+extends Node
+## SettingsManager — accessibility + gameplay settings (scaffold §13.3).
+##
+## Single source of truth for shake intensity, flash toggle, colorblind
+## indicators, subtitles and text speed. Backed by SaveSystem. All values
+## data-driven with sane arcade defaults.
+
+const DEFAULTS := {
+	"shake_intensity": 1.0,        # 0..1 multiplier on all camera shake
+	"flashes_enabled": true,       # screen flash toggle
+	"colorblind_indicators": false,# distinct shapes for objectives
+	"subtitles_enabled": true,     # VO callouts as text
+	"text_speed": 1.0,             # 0.5..2.0 multiplier
+}
+
+var _save: SaveSystem = null
+var _values: Dictionary = {}
+
+
+func _ready() -> void:
+	for key: String in DEFAULTS:
+		_values[key] = DEFAULTS[key]
+	_save = GameServices.lookup(&"save") as SaveSystem
+	if _save != null:
+		for key: String in DEFAULTS:
+			var loaded: Variant = _save.get_setting(StringName(key), DEFAULTS[key])
+			_values[key] = loaded
+	var locator: Object = GameServices.lookup(&"core")
+	if locator != null and locator.has_method("register"):
+		locator.register(&"settings", self)
+
+
+func get_value(key: String) -> Variant:
+	return _values.get(key, DEFAULTS.get(key))
+
+
+func set_value(key: String, value: Variant) -> void:
+	_values[key] = value
+	if _save != null:
+		_save.set_setting(StringName(key), value)
+
+
+## Shake scale 0..1 (accessibility: reduce or disable).
+func shake_scale() -> float:
+	return clampf(float(get_value("shake_intensity")), 0.0, 1.0)
+
+
+func flashes_enabled() -> bool:
+	return bool(get_value("flashes_enabled"))

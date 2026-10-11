@@ -18,6 +18,24 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+EventBus="*res://src/core/event_bus.gd"
+GameServices="*res://src/core/game_services.gd"
+SeededRNG="*res://src/core/rng/seeded_rng.gd"
+MatchManager="*res://src/match/match_manager.gd"
+ScoreDirector="*res://src/match/score/score_director.gd"
+StyleDirector="*res://src/styles/style_director.gd"
+ImpactDirector="*res://src/juice/impact_director.gd"
+CameraDirector="*res://src/juice/camera_director.gd"
+PostFXDirector="*res://src/juice/postfx_director.gd"
+AudioDirector="*res://src/audio/audio_director.gd"
+MusicDirector="*res://src/audio/music_director.gd"
+VoiceDirector="*res://src/audio/voice_director.gd"
+SFXPlayer="*res://src/audio/sfx_player.gd"
+PowerUpDirector="*res://src/powerups/powerup_director.gd"
+RouletteController="*res://src/powerups/roulette/roulette_controller.gd"
+MinigameDirector="*res://src/minigames/minigame_director.gd"
+SaveSystem="*res://src/systems/save_system.gd"
+SettingsManager="*res://src/systems/settings.gd"
 [debug]
 
 gdscript/warnings/untyped_declaration=1

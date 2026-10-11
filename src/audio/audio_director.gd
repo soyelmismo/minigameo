@@ -1,4 +1,3 @@
-class_name AudioDirector
 extends Node
 ## Audio orchestrator (scaffold.md §6.8 / §10.2).
 ##
@@ -54,15 +53,15 @@ func _ready() -> void:
 	# children in the scene graph by the orchestrator; if they are missing
 	# (headless tests), create minimal instances so the facade works.
 	if music_director == null:
-		music_director = MusicDirector.new()
+		music_director = load("res://src/audio/music_director.gd").new()
 		music_director.name = "MusicDirector"
 		add_child(music_director)
 	if voice_director == null:
-		voice_director = VoiceDirector.new()
+		voice_director = load("res://src/audio/voice_director.gd").new()
 		voice_director.name = "VoiceDirector"
 		add_child(voice_director)
 	if sfx_player == null:
-		sfx_player = SFXPlayer.new()
+		sfx_player = load("res://src/audio/sfx_player.gd").new()
 		sfx_player.name = "SFXPlayer"
 		add_child(sfx_player)
 	# Wire directors (duck-typed; null-safe both ways).
@@ -81,18 +80,18 @@ func _ready() -> void:
 func setup_buses() -> int:
 	var existing: int = 0
 	for entry: Dictionary in BusLayout.LAYOUT:
-		var name: StringName = entry["name"] as StringName
+		var bus_id: StringName = entry["name"] as StringName
 		var parent: StringName = entry["parent"] as StringName
-		if AudioServer.get_bus_index(name) != -1:
+		if AudioServer.get_bus_index(bus_id) != -1:
 			existing += 1
 			continue
 		var parent_idx: int = AudioServer.get_bus_index(parent)
 		if parent_idx == -1:
-			push_warning("AudioDirector: parent bus '%s' missing, skipping '%s'." % [parent, name])
+			push_warning("AudioDirector: parent bus '%s' missing, skipping '%s'." % [parent, bus_id])
 			continue
 		var new_idx: int = AudioServer.bus_count
 		AudioServer.add_bus(new_idx)
-		AudioServer.set_bus_name(new_idx, name)
+		AudioServer.set_bus_name(new_idx, bus_id)
 		AudioServer.set_bus_send(new_idx, parent)
 	_buses_ready = existing == BusLayout.LAYOUT.size()
 	_apply_bus_effects()

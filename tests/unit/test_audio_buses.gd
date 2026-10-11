@@ -15,7 +15,7 @@ class FakeClock:
 var _director: AudioDirector = null
 
 func before_each() -> void:
-	_director = AudioDirector.new()
+	_director = load("res://src/audio/audio_director.gd").new()
 	add_child_autofree(_director)
 
 func after_each() -> void:
@@ -39,7 +39,7 @@ func test_setup_buses_is_idempotent() -> void:
 	assert_eq(second, BusLayout.LAYOUT.size(), "all layout buses already exist")
 	assert_eq(AudioServer.bus_count, before, "no duplicate buses created")
 	# A brand-new director instance must also be a no-op.
-	var other := AudioDirector.new()
+	var other: Object = load("res://src/audio/audio_director.gd").new()
 	add_child_autofree(other)
 	assert_eq(other.setup_buses(), BusLayout.LAYOUT.size(), "idempotent across instances")
 

@@ -1,4 +1,3 @@
-class_name CameraDirector
 extends Node
 ## CameraDirector — follow camera + shake + FOV punch (scaffold §6.6).
 ##

@@ -1,4 +1,3 @@
-class_name PostFXDirector
 extends Node
 ## PostFXDirector — WorldEnvironment + fullscreen effects (scaffold §6.7).
 ##

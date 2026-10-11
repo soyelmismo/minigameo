@@ -1,4 +1,3 @@
-class_name StyleDirector
 extends Node
 ## StyleDirector — applies StylePacks to the world (scaffold §6.4, §9).
 ##

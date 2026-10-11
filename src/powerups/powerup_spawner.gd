@@ -137,7 +137,7 @@ func _resolve(node_name: StringName) -> Object:
 func _resolve_player() -> Node3D:
 	var services: Object = _resolve(&"GameServices")
 	if services != null and services.has_method("get"):
-		var found: Object = services.get(&"player")
+		var found: Object = services.lookup(&"player")
 		if found is Node3D:
 			return found as Node3D
 	var node: Node = get_tree().root.get_node_or_null("/root/Player")
@@ -147,4 +147,10 @@ func _resolve_player() -> Node3D:
 func _emit(signal_id: StringName, args: Array) -> void:
 	var bus: Object = _resolve(&"EventBus")
 	if bus != null and bus.has_signal(String(signal_id)):
-		bus.emit_signal(signal_id, *args)
+		match args.size():
+			1:
+				bus.emit_signal(signal_id, args[0])
+			2:
+				bus.emit_signal(signal_id, args[0], args[1])
+			_:
+				bus.emit_signal(signal_id)

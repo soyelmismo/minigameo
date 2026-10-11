@@ -1,4 +1,3 @@
-class_name RouletteController
 extends Node
 ## Ruleta de selección de micro-juego (scaffold.md §6.11).
 ##
@@ -75,6 +74,7 @@ func _finish_spin() -> void:
 	var id: StringName = _pending_id
 	_pending_id = &""
 	_last_id = id
+	_record_theme(id)
 	_emit(&"roulette_result", [id])
 	spin_finished.emit(id)
 	# Entrega al director de micro-juegos si existe.
@@ -182,4 +182,10 @@ func _resolve(node_name: StringName) -> Object:
 func _emit(signal_id: StringName, args: Array) -> void:
 	var bus: Object = _resolve(&"EventBus")
 	if bus != null and bus.has_signal(String(signal_id)):
-		bus.emit_signal(signal_id, *args)
+		match args.size():
+			1:
+				bus.emit_signal(signal_id, args[0])
+			2:
+				bus.emit_signal(signal_id, args[0], args[1])
+			_:
+				bus.emit_signal(signal_id)
