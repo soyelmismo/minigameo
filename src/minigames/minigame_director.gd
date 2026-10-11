@@ -8,13 +8,13 @@ extends Node
 ## Nunca referencia otros sistemas directamente: los resuelve por duck-typing
 ## vía `get_tree().root.get_node_or_null()` y degrada en silencio si faltan.
 
-const SERVICE_REGISTRY := &"minigame_registry"
-const SERVICE_SCORE := &"score_director"
-const SERVICE_IMPACT := &"impact_director"
-const SERVICE_STYLE := &"style_director"
-const SERVICE_MUSIC := &"music_director"
-const SERVICE_VOICE := &"voice_director"
-const SERVICE_MATCH := &"match_manager"
+const SERVICE_REGISTRY := &"MinigameRegistry"
+const SERVICE_SCORE := &"ScoreDirector"
+const SERVICE_IMPACT := &"ImpactDirector"
+const SERVICE_STYLE := &"StyleDirector"
+const SERVICE_MUSIC := &"MusicDirector"
+const SERVICE_VOICE := &"VoiceDirector"
+const SERVICE_MATCH := &"MatchManager"
 
 var _registry: MinigameRegistry = null
 var _active: Minigame = null
@@ -97,7 +97,7 @@ func play(id: StringName, difficulty: float = 0.0) -> bool:
 		return false
 
 	# El micro-juego vive bajo el director para que su limpieza sea trazable.
-	mg.name = "Minigame_%s" % String(id)
+	mg.name = "MG_%s" % String(id)
 	add_child(mg)
 	_active = mg
 	_active_id = id
@@ -198,8 +198,8 @@ func _resolve(node_name: StringName) -> Object:
 ## El jugador se busca en GameServices o en el árbol, no por autoload directo.
 func _resolve_player() -> Node3D:
 	var services: Object = _resolve(&"GameServices")
-	if services != null and services.has_method("get"):
-		var found: Object = services.get(&"player")
+	if services != null and services.has_method("lookup"):
+		var found: Object = services.lookup(&"player")
 		if found is Node3D:
 			return found as Node3D
 	var node: Node = get_tree().root.get_node_or_null("/root/Player")

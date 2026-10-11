@@ -1,3 +1,4 @@
+class_name MinigameRegistry
 extends Node
 ## Registro central ID → {escena, metadata} (scaffold.md §7.7).
 ##
