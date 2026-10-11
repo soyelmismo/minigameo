@@ -29,6 +29,7 @@ var _time_left: float = 0.0
 var _countdown_left: float = 0.0
 var _state_elapsed: float = 0.0
 var _pending_minigame_id: StringName = &""
+var _last_tick_second: int = -1   # last whole second announced via match_tick
 
 
 func _ready() -> void:
@@ -91,6 +92,7 @@ func advance(delta: float) -> void:
 			transition_to(State.TIME_UP)
 			EventBus.emit(&"match_time_up")
 			return
+		_announce_tick()
 	match _state:
 		State.COUNTDOWN:
 			_countdown_left -= delta
@@ -110,9 +112,19 @@ func advance(delta: float) -> void:
 ## Start the match from TITLE (countdown -> freeroam).
 func start_match() -> void:
 	_time_left = config.match_length_s
+	_last_tick_second = -1
 	transition_to(State.COUNTDOWN)
 	_countdown_left = config.countdown_s
 	EventBus.emit(&"match_started")
+
+
+## Announces the remaining time once per whole second (arcade countdown
+## feel; the HUD and VO listen to `match_tick`). 1 Hz, never per frame.
+func _announce_tick() -> void:
+	var whole: int = int(ceilf(_time_left))
+	if whole != _last_tick_second:
+		_last_tick_second = whole
+		EventBus.emit(&"match_tick", _time_left)
 
 
 ## Free roam picked up a power-up: enter the roulette.

@@ -55,7 +55,7 @@ func _connect_event_bus() -> void:
 	_event_bus = _find(&"EventBus")
 	if _event_bus == null:
 		return
-	for sig: String in ["minigame_started", "minigame_finished", "score_changed", "combo_changed", "match_time_up", "style_applied"]:
+	for sig: String in ["minigame_started", "minigame_finished", "score_changed", "combo_changed", "match_time_up", "match_tick", "style_applied"]:
 		if _event_bus.has_signal(sig):
 			match sig:
 				"minigame_started":
@@ -68,6 +68,8 @@ func _connect_event_bus() -> void:
 					_event_bus.combo_changed.connect(_on_combo_changed)
 				"match_time_up":
 					_event_bus.match_time_up.connect(_on_match_time_up)
+				"match_tick":
+					_event_bus.match_tick.connect(_on_match_tick)
 				"style_applied":
 					_event_bus.style_applied.connect(_on_style_applied)
 
@@ -95,6 +97,10 @@ func _on_combo_changed(combo: int) -> void:
 
 func _on_match_time_up() -> void:
 	set_match_time(0.0)
+
+
+func _on_match_tick(time_left: float) -> void:
+	set_match_time(time_left)
 
 
 func _on_style_applied(pack_id: StringName) -> void:

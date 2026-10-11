@@ -29,6 +29,7 @@ signal impact_requested(weight: int)
 signal match_time_up()
 signal match_started()
 signal match_reset()
+signal match_tick(time_left: float)
 signal player_state_changed(state: StringName)
 signal voice_requested(event_id: StringName)
 
@@ -49,6 +50,7 @@ static func signal_name_for(event: StringName) -> String:
 		&"combo_changed": return "combo_changed"
 		&"impact_requested": return "impact_requested"
 		&"match_time_up": return "match_time_up"
+		&"match_tick": return "match_tick"
 		&"match_started": return "match_started"
 		&"match_reset": return "match_reset"
 		&"player_state_changed": return "player_state_changed"

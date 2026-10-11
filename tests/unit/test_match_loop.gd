@@ -65,6 +65,28 @@ func test_clock_advances_only_in_running_states() -> void:
 		"clock runs during FREE_ROAM")
 
 
+func test_match_emits_one_tick_per_second() -> void:
+	# before_each already called start_match(); drive past the countdown.
+	_match.advance(3.0)
+	assert_eq(int(_match.current_state()), 3, "FREE_ROAM")
+	var ticks: Array[float] = []
+	var bus: Object = _autoload("EventBus")
+	assert_not_null(bus, "EventBus autoload present")
+	if bus == null:
+		return
+	bus.match_tick.connect(func(t: float) -> void: ticks.append(t))
+	# Sample 2.5 seconds at 60 fps: expect ceil-2 or 3 distinct ticks (1 Hz).
+	var elapsed: float = 0.0
+	while elapsed < 2.5:
+		_match.advance(1.0 / 60.0)
+		elapsed += 1.0 / 60.0
+	assert_gte(ticks.size(), 2, "tick fires about once per second (got %d)" % ticks.size())
+	assert_lte(ticks.size(), 4, "tick never fires per frame (got %d)" % ticks.size())
+	# Ticks must descend monotonically (it is a countdown).
+	for i in range(1, ticks.size()):
+		assert_lte(ticks[i], ticks[i - 1], "countdown ticks descend")
+
+
 func test_match_ends_at_time_up() -> void:
 	# before_each already called start_match().
 	for _i in 60:
