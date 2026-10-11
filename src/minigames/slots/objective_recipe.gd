@@ -13,5 +13,3 @@ extends Resource
 
 
 ## Bonus de tiempo sobrante (puntos enteros, nunca negativo).
-func time_bonus_for(time_left: float) -> int:
-	return maxi(0, int(round(time_left * float(time_bonus_per_s))))

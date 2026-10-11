@@ -142,5 +142,3 @@ func spawn_positions() -> Array[Vector3]:
 	return out
 
 
-func block_center() -> Vector3:
-	return global_position

@@ -136,8 +136,6 @@ func _fill_from_cooldowns() -> void:
 
 
 ## Número de power-ups actualmente activos.
-func get_active_count() -> int:
-	return _alive.size()
 
 
 ## Cooldown restante del slot `i` (0 = libre).

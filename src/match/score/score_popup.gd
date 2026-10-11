@@ -33,13 +33,6 @@ func show(points: int, world_pos: Vector3) -> void:
 
 
 ## Drive the rise/fade animation with an explicit delta (pool-safe).
-func animate(delta: float) -> void:
-	if _life <= 0.0:
-		return
-	_life -= delta
-	var t: float = 1.0 - clampf(_life / LIFETIME, 0.0, 1.0)
-	position = _origin + Vector3(0, RISE_HEIGHT * t, 0)
-	modulate.a = 1.0 - t
 	scale = Vector3.ONE * (0.6 + 0.5 * t)
 	if _life <= 0.0:
 		visible = false

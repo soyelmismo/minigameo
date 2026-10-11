@@ -69,10 +69,6 @@ func take(by: Node) -> void:
 	queue_free()
 
 
-func is_taken() -> bool:
-	return _taken
-
-
 ## El jugador se reconoce por duck-typing, nunca por clase concreta.
 func _is_player(body: Node) -> bool:
 	if body == null:
