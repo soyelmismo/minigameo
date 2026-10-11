@@ -8,6 +8,7 @@ extends Resource
 @export var match_length_s: float = 300.0          # the 5-minute match
 @export var countdown_s: float = 3.0               # 3-2-1 GO
 @export var roulette_spin_s: float = 2.5           # dramatic spin duration
+@export var style_pop_s: float = 1.2                 # how long the STYLE_POP beat holds
 @export var minigame_cooldown_s: float = 1.5       # gap between minigames
 @export var powerups_max_active: int = 6           # concurrent on the block
 @export var powerup_respawn_s: float = 4.0         # after pickup

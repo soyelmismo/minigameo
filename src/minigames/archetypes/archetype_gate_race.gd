@@ -13,9 +13,13 @@ extends MinigameArchetype
 ## una fuera de orden reinicia la secuencia (fail_on WRONG_INPUT).
 
 const KIND_GATES_IN_ORDER := &"GATES_IN_ORDER"
-const GATE_RADIUS := 2.5
+## Archetype default for `reach_m`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_GATE_RADIUS := 2.5
 
 var _passed: int = 0
+var _gate_radius: float = DEFAULT_GATE_RADIUS
 var _target: int = 5
 var _time_bonus_per_s: int = 100
 var _gate_positions: Array[Vector3] = []
@@ -24,6 +28,7 @@ var _gate_nodes: Array[Node] = []
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_gate_radius = _slot_value(&"reach_m", DEFAULT_GATE_RADIUS)
 	_passed = 0
 	_gate_positions.clear()
 	_gate_nodes.clear()
@@ -65,7 +70,7 @@ func advance(_delta: float) -> void:
 	# Gate esperada = la siguiente en orden.
 	if _passed < _gate_positions.size():
 		var expected: Vector3 = _gate_positions[_passed]
-		if player_pos.distance_to(expected) <= GATE_RADIUS:
+		if player_pos.distance_to(expected) <= _gate_radius:
 			_passed += 1
 			var combo: int = bump_combo()
 			set_progress(float(_passed) / float(maxi(1, _target)))

@@ -155,8 +155,24 @@ func set_score(value: int) -> void:
 
 ## Multiplicador del combo (widget ruidoso, §13.1).
 func set_combo(combo: int) -> void:
-	var mult: float = 1.0 + maxi(0, combo) * 0.5
+	var mult: float = 1.0 + maxi(0, combo) * _combo_step()
 	_multiplier.set_value(mult)
+
+
+## The authoritative combo step, read from the ScoreDirector (the same value it
+## multiplies by), falling back to GameConfig.
+##
+## The HUD used to hardcode its own step of 0.5 while ScoreDirector used the
+## configured 0.25, so the number on screen disagreed with the number actually
+## applied to the score — the HUD was lying by up to 4x. Reading it from the
+## system that owns it (§1.3, and one source of truth) fixes that.
+func _combo_step() -> float:
+	var score: Object = GameServices.lookup(&"score")
+	if score != null and score.has_method("combo_step"):
+		var from_director: Variant = score.combo_step()
+		if from_director != null and float(from_director) > 0.0:
+			return float(from_director)
+	return cfg.combo_step if cfg != null else 0.25
 
 
 ## Tiempo restante de partida. Pulso rojo bajo el umbral (§13.1).

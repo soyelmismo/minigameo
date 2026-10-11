@@ -14,12 +14,15 @@ extends MinigameArchetype
 ## con `fail_on: FALL` termina el micro-juego; si no, solo rompe el progreso.
 
 const KIND_BALANCE_T := &"BALANCE_T"
-const BASE_PATH_WIDTH := 3.0
+## Archetype default for `path_width`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.path_width overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_BASE_PATH_WIDTH := 3.0
 
 var _progress: float = 0.0
 var _target: float = 8.0
 var _fail_on: StringName = &"FALL"
-var _path_width: float = BASE_PATH_WIDTH
+var _path_width: float = DEFAULT_BASE_PATH_WIDTH
 var _waypoints: Array[Vector3] = []
 var _current: int = 0
 var _time_bonus_per_s: int = 100
@@ -27,6 +30,7 @@ var _time_bonus_per_s: int = 100
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_path_width = _slot_value(&"path_width", DEFAULT_BASE_PATH_WIDTH)
 	_progress = 0.0
 	_current = 0
 	_waypoints.clear()
@@ -36,7 +40,7 @@ func setup(ctx: MinigameContext) -> void:
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
 	# El camino se estrecha con la dificultad del contexto (0..1).
 	var difficulty: float = ctx.difficulty if ctx != null else 0.0
-	_path_width = BASE_PATH_WIDTH * (1.0 - clampf(difficulty, 0.0, 1.0) * 0.6)
+	_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * 0.6)
 
 
 func start() -> void:

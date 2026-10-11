@@ -13,9 +13,14 @@ extends MinigameArchetype
 ## intento. El medidor sube a velocidad constante mientras se mantiene.
 
 const KIND_CHARGE_RELEASE := &"CHARGE_RELEASE"
-const CHARGE_RATE := 1.0  # unidades/segundo de carga
+## Archetype default for `charge_rate`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.charge_rate overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_CHARGE_RATE := 1.0  # unidades/segundo de carga
 
 var _blasts: int = 0
+var _charge_rate: float = DEFAULT_CHARGE_RATE
+var _release_point: float = 0.75
 var _target: int = 3
 var _tolerance: float = 0.12
 var _time_bonus_per_s: int = 100
@@ -25,6 +30,13 @@ var _charge: float = 0.0
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_charge_rate = _slot_value(&"charge_rate", DEFAULT_CHARGE_RATE)
+	# Release window centre (§1.3): the point in the charge bar that counts as
+	# a perfect release. Slot-tunable, so a `.tres` can move the window.
+	if _meta != null and _meta.objective_recipe != null:
+		var window_center: Variant = _meta.objective_recipe.get("tolerance")
+		if window_center != null and float(window_center) > 0.0:
+			_release_point = clampf(float(window_center), 0.05, 0.95)
 	_blasts = 0
 	_charging = false
 	_charge = 0.0
@@ -52,7 +64,7 @@ func _spawn_projectile() -> void:
 func advance(delta: float) -> void:
 	if not _charging:
 		return
-	_charge = clampf(_charge + delta * CHARGE_RATE, 0.0, 1.0)
+	_charge = clampf(_charge + delta * _charge_rate, 0.0, 1.0)
 	set_progress(_charge)
 	emit_event(&"charge", {"value": _charge})
 
@@ -83,7 +95,7 @@ func on_input(input_event: InputEvent) -> void:
 
 
 func _release() -> void:
-	var in_window: bool = absf(_charge - 0.75) <= _tolerance
+	var in_window: bool = absf(_charge - _release_point) <= _tolerance
 	if in_window:
 		_blasts += 1
 		var combo: int = bump_combo()

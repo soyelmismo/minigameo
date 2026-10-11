@@ -38,9 +38,32 @@ func setup(ctx: MinigameContext) -> void:
 	# La metadata llega por el contexto (§7.2); solo si falta se busca.
 	_meta = ctx.metadata if ctx != null and ctx.metadata != null else get_metadata()
 	_duration = _meta.duration_s if _meta != null else 20.0
+	# §7.1 hard cap: a micro-game must never outlive the match it runs in.
+	# Without this clamp a 25 s micro-game launched with 8 s left runs past the
+	# clock until the director aborts it, which the player reads as a bug.
+	var left: float = float(ctx.time_left_in_match) if ctx != null else 0.0
+	if left > 0.0:
+		_duration = minf(_duration, left)
 	_elapsed = 0.0
 	_combo_max = 0
 	_finished = false
+
+
+## Reads a balance value from the ObjectiveRecipe slot, falling back to the
+## archetype's own default when the slot is absent or explicitly unset (-1).
+##
+## §1.3: tuning lives in `.tres` data, not in gameplay code. The archetype
+## default stays declared next to the engine that uses it (so the behaviour of
+## an unconfigured `.tres` is unchanged), but a `.tres` that fills the field
+## retunes the micro-game with no code change.
+func _slot_value(field: StringName, archetype_default: float) -> float:
+	if _meta == null or _meta.objective_recipe == null:
+		return archetype_default
+	var raw: Variant = _meta.objective_recipe.get(field)
+	if raw == null:
+		return archetype_default
+	var value: float = float(raw)
+	return value if value >= 0.0 else archetype_default
 
 
 func start() -> void:

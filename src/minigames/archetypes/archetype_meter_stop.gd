@@ -13,18 +13,22 @@ extends MinigameArchetype
 ## el micro-juego salvo que `fail_on` lo declare.
 
 const KIND_STOP_IN_ZONE := &"STOP_IN_ZONE"
-const SWEEP_SPEED := 1.0  # ciclos/segundo del barrido cuando no hay speed
+## Archetype default for `sweep_speed`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.sweep_speed overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_SWEEP_SPEED := 1.0  # ciclos/segundo del barrido cuando no hay speed
 
 var _stops: int = 0
 var _target: int = 3
 var _tolerance: float = 0.1
 var _time_bonus_per_s: int = 100
 var _marker: float = 0.0
-var _sweep_speed: float = SWEEP_SPEED
+var _sweep_speed: float = DEFAULT_SWEEP_SPEED
 
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_sweep_speed = _slot_value(&"sweep_speed", DEFAULT_SWEEP_SPEED)
 	_stops = 0
 	_marker = 0.0
 	if _meta != null and _meta.objective_recipe != null:

@@ -13,15 +13,20 @@ extends MinigameArchetype
 ## concreto es su `.tres`, este motor es genérico y reutilizable.
 
 const KIND_COLLECT_N := &"COLLECT_N"
-const PICKUP_RADIUS := 1.8   # radio de recogida (distancia al jugador)
+## Archetype default for `reach_m`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_PICKUP_RADIUS := 1.8  # radio de recogida (distancia al jugador)
 
 var _collected: int = 0
+var _pickup_radius: float = DEFAULT_PICKUP_RADIUS
 var _target: int = 12
 var _time_bonus_per_s: int = 100
 
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_pickup_radius = _slot_value(&"reach_m", DEFAULT_PICKUP_RADIUS)
 	_collected = 0
 	if _meta != null and _meta.objective_recipe != null:
 		_target = _meta.objective_recipe.target
@@ -85,7 +90,7 @@ func advance(delta: float) -> void:
 		if not is_instance_valid(node):
 			continue
 		var pos: Vector3 = _node_position(node)
-		if pos.distance_to(player_pos) <= PICKUP_RADIUS:
+		if pos.distance_to(player_pos) <= _pickup_radius:
 			if node.has_signal("collected"):
 				node.emit_signal("collected")
 				node.queue_free()

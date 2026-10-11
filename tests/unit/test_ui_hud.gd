@@ -69,7 +69,10 @@ func test_set_combo_updates_multiplier() -> void:
 	hud.set_combo(0)
 	assert_almost_eq(hud.multiplier_value(), 1.0, 0.001, "combo 0 is x1.0")
 	hud.set_combo(6)
-	assert_almost_eq(hud.multiplier_value(), 4.0, 0.001, "combo 6 is x4.0")
+	# The HUD reads the step from the ScoreDirector (GameConfig.combo_step = 0.25),
+	# so the number on screen matches the number actually applied to the score.
+	# It used to hardcode 0.5 and display 4.0 here while scoring x2.5.
+	assert_almost_eq(hud.multiplier_value(), 2.5, 0.001, "combo 6 is x2.5 (the real step)")
 
 
 func test_set_match_time_formats_and_pulses() -> void:

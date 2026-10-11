@@ -33,6 +33,12 @@ func _load_config() -> GameConfig:
 
 # --- Combo ------------------------------------------------------------------
 
+## The multiplier step the HUD reads instead of carrying its own literal
+## (§1.3: one source of truth, and it lives in the .tres).
+func combo_step() -> float:
+	return config.combo_step if config != null else 0.25
+
+
 ## A success: bumps the combo and multiplier. Call on every win/hit.
 func register_success() -> void:
 	combo += 1

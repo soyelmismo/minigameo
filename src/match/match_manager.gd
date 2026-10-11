@@ -124,7 +124,7 @@ func advance(delta: float) -> void:
 				# match never deadlocks.
 				start_minigame(_pending_minigame_id)
 		State.STYLE_POP:
-			if _state_elapsed >= 1.2:
+			if _state_elapsed >= config.style_pop_s:
 				transition_to(State.FREE_ROAM)
 
 

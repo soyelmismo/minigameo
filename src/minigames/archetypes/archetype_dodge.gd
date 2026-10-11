@@ -12,14 +12,19 @@ extends MinigameArchetype
 ## `duration_s`; fracaso inmediato al tocar un peligro (TOUCH_HAZARD).
 
 const KIND_SURVIVE_T := &"SURVIVE_T"
-const HAZARD_HIT_RADIUS := 1.2  # radio de contacto peligro-jugador
+## Archetype default for `reach_m`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_HAZARD_HIT_RADIUS := 1.2  # radio de contacto peligro-jugador
 
+var _hazard_radius: float = DEFAULT_HAZARD_HIT_RADIUS
 var _time_bonus_per_s: int = 100
 var _wave_index: int = 0
 
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_hazard_radius = _slot_value(&"reach_m", DEFAULT_HAZARD_HIT_RADIUS)
 	_wave_index = 0
 	if _meta != null and _meta.objective_recipe != null:
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
@@ -67,7 +72,7 @@ func advance(_delta: float) -> void:
 		if node is not Node3D:
 			continue
 		var hazard: Node3D = node as Node3D
-		if hazard.global_position.distance_to(player_pos) <= HAZARD_HIT_RADIUS:
+		if hazard.global_position.distance_to(player_pos) <= _hazard_radius:
 			# Fallo inmediato: el director limpiará las entidades en teardown.
 			finish_fail(&"TOUCH_HAZARD")
 			return

@@ -14,9 +14,13 @@ extends MinigameArchetype
 ## solo evalúa la condición de victoria de forma data-driven.
 
 const KIND_PUSH_N_TO_ZONE := &"PUSH_N_TO_ZONE"
-const ZONE_RADIUS := 5.0
+## Archetype default for `reach_m`. Read through _slot_value(), so a
+## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
+## data, never magic numbers in gameplay).
+const DEFAULT_ZONE_RADIUS := 5.0
 
 var _pushed: int = 0
+var _zone_radius: float = DEFAULT_ZONE_RADIUS
 var _target: int = 5
 var _time_bonus_per_s: int = 100
 var _delivered: Array[Node] = []
@@ -24,6 +28,7 @@ var _delivered: Array[Node] = []
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
+	_zone_radius = _slot_value(&"reach_m", DEFAULT_ZONE_RADIUS)
 	_pushed = 0
 	_delivered.clear()
 	if _meta != null and _meta.objective_recipe != null:
@@ -84,7 +89,7 @@ func advance(_delta: float) -> void:
 			continue
 		if node in _delivered:
 			continue
-		if (node as Node3D).global_position.distance_to(zone) <= ZONE_RADIUS:
+		if (node as Node3D).global_position.distance_to(zone) <= _zone_radius:
 			_delivered.append(node)
 			_pushed += 1
 			var combo: int = bump_combo()
