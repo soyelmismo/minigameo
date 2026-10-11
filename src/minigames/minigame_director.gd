@@ -252,6 +252,10 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 	var style: Object = _resolve(SERVICE_STYLE)
 	if style != null and style.has_method("revert_to_base"):
 		style.revert_to_base()
+	# --- Avisar al MatchManager: micro-juego terminado (§6.2) ---
+	var match_mgr: Object = _resolve(SERVICE_MATCH)
+	if match_mgr != null and match_mgr.has_method("finish_minigame"):
+		match_mgr.finish_minigame(result)
 
 	_emit(&"minigame_finished", [id, result])
 	_cooldown_left = cooldown_s
