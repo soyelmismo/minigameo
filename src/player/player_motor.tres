@@ -1,7 +1,18 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="PlayerMotorConfig" load_steps=2 format=3]
 
-[sub_resource type="GDScript" id="GDScript_bi06h"]
+[ext_resource type="Script" path="res://src/player/player_motor_config.gd" id="1_cfg"]
 
 [resource]
-script = SubResource("GDScript_bi06h")
-run_speed = 9.5
+script = ExtResource("1_cfg")
+move_speed = 9.0
+sprint_multiplier = 1.45
+accel = 60.0
+friction = 50.0
+air_accel = 25.0
+jump_velocity = 8.5
+gravity = 24.0
+coyote_time_s = 0.12
+jump_buffer_s = 0.12
+turn_lean_deg = 18.0
+squash_amount = 0.15
+lean_speed = 10.0

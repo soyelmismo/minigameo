@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://src/player/player_motor.gd" id="2_motor"]
+[ext_resource type="Resource" path="res://src/player/player_motor.tres" id="3_cfg"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.4
+height = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.95, 0.55, 0.15, 1)
+roughness = 0.5
+
+[node name="Player" type="Node3D"]
+script = ExtResource("1_player")
+
+[node name="PlayerMotor" type="CharacterBody3D" parent="."]
+script = ExtResource("2_motor")
+config = ExtResource("3_cfg")
+
+[node name="Avatar" type="MeshInstance3D" parent="PlayerMotor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerMotor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="PlayerInput" type="Node" parent="."]
