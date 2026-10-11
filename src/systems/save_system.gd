@@ -30,6 +30,13 @@ func submit_score(score: int, rank: StringName) -> bool:
 	return false
 
 
+## Wipes the record (tests and "clear save" flows). Keeps the file coherent.
+func reset() -> void:
+	best_score = 0
+	best_rank = &"D"
+	_save()
+
+
 ## Read/write a settings value (accessibility lives here too).
 func get_setting(key: StringName, default_value: Variant = null) -> Variant:
 	return _settings.get(String(key), default_value)

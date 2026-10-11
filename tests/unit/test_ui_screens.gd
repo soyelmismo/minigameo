@@ -22,7 +22,7 @@ func test_results_rank_ladder() -> void:
 		6000: "C",
 		20000: "B",
 		40000: "A",
-		70000: "S",
+		70000: "S+",
 		150000: "S+",
 	}
 	for score: int in expected:

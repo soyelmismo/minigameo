@@ -22,16 +22,30 @@ func _ready() -> void:
 
 
 func _register() -> void:
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"player", self)
+	# Resolución por path (§1.1): el identificador global del autoload no
+	# está disponible en todos los contextos de compilación.
+	var locator: Object = _resolve(&"GameServices")
+	if locator != null and locator.has_method("lookup"):
+		var core: Object = locator.lookup(&"core")
+		if core != null and core.has_method("register"):
+			core.register(&"player", self)
+
+
+func _resolve(node_name: StringName) -> Object:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var node: Node = tree.root.get_node_or_null(String(node_name))
+	return node as Object
 
 
 func _physics_process(_delta: float) -> void:
 	var new_state: StringName = _state_name()
 	if new_state != _state:
 		_state = new_state
-		EventBus.emit(&"player_state_changed", new_state)
+		var bus: Object = _resolve(&"EventBus")
+		if bus != null and bus.has_method("emit"):
+			bus.emit(&"player_state_changed", new_state)
 
 
 func _state_name() -> StringName:

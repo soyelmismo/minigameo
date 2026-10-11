@@ -3,8 +3,9 @@
 [ext_resource type="Script" path="res://src/ui/screens/settings_panel.gd" id="settings_gd"]
 [ext_resource type="Theme" path="res://src/ui/theme/hud_base.tres" id="hud_theme"]
 
-[node name="SettingsPanel" type="Control"]
+[node name="SettingsPanelRoot" type="Control"]
 layout_mode = 3
+process_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

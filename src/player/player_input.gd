@@ -35,7 +35,13 @@ func _ensure_actions() -> void:
 
 
 func _find_player() -> void:
-	var p: Object = GameServices.lookup(&"player")
+	var tree := get_tree()
+	if tree == null:
+		return
+	var services: Object = tree.root.get_node_or_null("/root/GameServices") as Object
+	if services == null or not services.has_method("lookup"):
+		return
+	var p: Object = services.lookup(&"player")
 	if p is Player:
 		player = p as Player
 

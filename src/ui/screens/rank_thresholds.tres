@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("rank_cfg")
 c_min = 5000
-b_min = 15000
-a_min = 30000
-s_min = 60000
-s_plus_min = 100000
+b_min = 12000
+a_min = 25000
+s_min = 45000
+s_plus_min = 70000

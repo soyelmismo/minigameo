@@ -22,7 +22,7 @@ from art_common import (  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
                    "art", "models", "player_idle.glb")
-ROOT_NAME = "Sandra Vasquez"
+ROOT_NAME = "PlayerRoot"
 
 reset_scene()
 root = new_root(ROOT_NAME)
@@ -44,8 +44,8 @@ H_KNEE = 0.48
 H_HIP = 0.86
 H_CHEST = 1.20
 H_SHOULDER = 1.34
-H_NECK = 1.44
-H_HEAD = 1.80          # top of skull
+H_NECK = 1.42
+H_HEAD = 1.79          # top of skull (keeps the whole body inside 1.8 m)
 
 # ------------------------------------------------------------------- feet
 for side, sx in (("L", -1), ("R", 1)):
