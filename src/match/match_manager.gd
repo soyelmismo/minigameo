@@ -153,13 +153,51 @@ func request_roulette() -> void:
 		EventBus.emit(&"roulette_started")
 
 
-## Roulette result: begin the chosen micro-game (clamped to remaining time).
-func start_minigame(minigame_id: StringName) -> void:
+## Roulette result: begin the chosen micro-game.
+##
+## The play call is routed through the MinigameDirector here, and the match
+## only commits to MINIGAME once the director confirms the micro-game is
+## actually running. Previously the roulette played the id on its own AND
+## emitted `roulette_result`, so the match entered MINIGAME before anyone
+## asked the director: when `play()` refused (anti-repetition cooldown, an
+## unknown id) nothing ran, and the match sat in MINIGAME with an empty world
+## until the clock died -- a dead minute per refusal, with no error anywhere.
+## `play()` returning false is now a loud, recoverable condition.
+func start_minigame(minigame_id: StringName) -> bool:
 	_pending_minigame_id = minigame_id
 	if _state != State.ROULETTE and _state != State.FREE_ROAM:
-		return
+		return false
+	var director: Object = _resolve_minigame_director()
+	if director == null or not director.has_method("play"):
+		push_error(
+			"MatchManager: no MinigameDirector to play '%s'; staying in %d"
+				% [String(minigame_id), int(_state)]
+		)
+		return false
+	if not bool(director.play(minigame_id, 0.0)):
+		push_warning(
+			"MatchManager: '%s' was refused by the director (cooldown or unknown id);"
+				% String(minigame_id)
+		)
+		# Recover instead of deadlocking: hand the round back to free roam.
+		if _state == State.ROULETTE:
+			transition_to(State.FREE_ROAM)
+		return false
 	transition_to(State.MINIGAME)
-	EventBus.emit(&"minigame_started", minigame_id)
+	return true
+
+
+## Resolves the micro-game director through the service registry so this never
+## reaches for a sibling autoload by path (§1.1). Falls back to the canonical
+## singleton path when the registry is not populated (a bare test harness).
+func _resolve_minigame_director() -> Object:
+	var service: Object = GameServices.lookup(&"minigames")
+	if service != null and service.has_method("play"):
+		return service
+	var node: Node = get_tree().root.get_node_or_null("/root/MinigameDirector")
+	if node != null and node.has_method("play"):
+		return node
+	return null
 
 
 ## Minigame finished: brief style-pop, then back to freeroam.

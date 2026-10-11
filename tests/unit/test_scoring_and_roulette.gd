@@ -94,10 +94,45 @@ func test_roulette_result_starts_the_minigame_through_the_bus() -> void:
 	assert_eq(match_mgr.current_state(), match_mgr.State.ROULETTE,
 		"roulette opened")
 
-	# The bus event, exactly as RouletteController emits it on finish.
+	# The bus event, exactly as RouletteController emits it on finish. The
+	# contract under test is MatchManager's: it must play the pick through the
+	# director and commit to MINIGAME only once the play is confirmed. A stub
+	# that accepts pins that without depending on the real director's cooldown,
+	# which a unit harness cannot control (it is global autoload state).
+	var services: Object = _autoload(&"GameServices")
+	assert_not_null(services, "GameServices autoload present")
+	# Restore the registry to whatever it held before the stub, so the real
+	# MinigameDirector (if it was registered) is still there afterwards.
+	var previous: Object = services.resolve(&"minigames")
+	var accepting: Object = _StubDirector.new(true)
+	add_child_autofree(accepting)
+	services.register(&"minigames", accepting)
+
 	EventBus.emit(&"roulette_result", &"token_rush")
-	assert_eq(match_mgr.current_state(), match_mgr.State.MINIGAME,
-		"roulette_result transitions straight to MINIGAME")
+	var played_state: int = int(match_mgr.current_state())
+	if previous != null:
+		services.register(&"minigames", previous)
+	assert_eq(played_state, int(match_mgr.State.MINIGAME),
+		"roulette_result transitions to MINIGAME when the director accepts the play")
+
+	# Hand the match back to FREE_ROAM: request_roulette() only opens the wheel
+	# from FREE_ROAM, so the refusal path must start from a settled state.
+	match_mgr.finish_minigame(null)
+	match_mgr.advance(match_mgr.config.style_pop_s + 0.1)
+	assert_eq(int(match_mgr.current_state()), int(match_mgr.State.FREE_ROAM),
+		"pre-condition: back in FREE_ROAM after the first micro-game")
+
+	# Refusal path: the match must recover, not deadlock in an empty MINIGAME.
+	var refusing: Object = _StubDirector.new(false)
+	add_child_autofree(refusing)
+	services.register(&"minigames", refusing)
+	match_mgr.request_roulette()
+	EventBus.emit(&"roulette_result", &"token_rush")
+	var refused_state: int = int(match_mgr.current_state())
+	if previous != null:
+		services.register(&"minigames", previous)
+	assert_eq(refused_state, int(match_mgr.State.FREE_ROAM),
+		"a refused play recovers to FREE_ROAM instead of deadlocking in MINIGAME")
 
 
 func test_game_loop_ticks_the_roulette() -> void:
@@ -138,3 +173,18 @@ func test_style_director_applies_a_pack_by_id() -> void:
 	assert_not_null(active, "the style pack is the one the metadata requested")
 	assert_eq(active.id, &"NEON_DRIFT", "NEON_DRIFT is now the active pack")
 	assert_true(bool(style.is_styled()), "the director reports a styled world")
+
+
+# --- Minimal director stub for the roulette_result wiring test ---
+
+## Stands in for MinigameDirector: accepts or refuses play() on demand so the
+## match's commit-and-recover paths can be driven without a real cooldown.
+class _StubDirector extends Node:
+
+	var _accept: bool = true
+
+	func _init(accept: bool = true) -> void:
+		_accept = accept
+
+	func play(_id: StringName, _difficulty: float = 0.0) -> bool:
+		return _accept

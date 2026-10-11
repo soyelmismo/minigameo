@@ -889,15 +889,12 @@ func _text_of(path: String) -> String:
 
 
 ## The roulette plays the micro-game even while the director is cooling down.
-func test_documents_match_stalls_in_minigame_when_director_refuses() -> void:
-	# DOCUMENTED DEFECT: RouletteController._finish_spin()
-	# (src/powerups/roulette/roulette_controller.gd:81-83) calls
-	# _director.play(id) even while the director's anti-repetition cooldown is
-	# armed. play() returns false, but MatchManager._on_roulette_result() ->
-	# start_minigame() has already committed the state machine to MINIGAME, and
-	# MatchManager.advance() has no MINIGAME case
-	# (src/match/match_manager.gd:112-126), so the match sits in MINIGAME with
-	# nothing running until the clock dies: a dead minute every time.
+func test_roulette_result_reaches_the_director_even_on_cooldown() -> void:
+	# The roulette no longer plays the micro-game itself: MatchManager subscribes
+	# to `roulette_result`, calls MinigameDirector.play(), and only commits to
+	# MINIGAME when the director accepts. This pins both halves of that contract:
+	# the pick reaches the director, and a refusal recovers to FREE_ROAM instead
+	# of deadlocking in MINIGAME with an empty world for the rest of the clock.
 	_start_match()
 	_tick(3.0)
 	_director.update(999.0)
@@ -911,22 +908,21 @@ func test_documents_match_stalls_in_minigame_when_director_refuses() -> void:
 	_roulette.update(3.0)     # resolves the spin -> play() is refused
 
 	assert_false(bool(_director.is_active()),
-		"DOCUMENTED DEFECT: the director refused to play (cooldown) and nothing runs")
-	assert_eq(int(_match.current_state()), STATE_MINIGAME,
-		"DOCUMENTED DEFECT: the state machine is in MINIGAME with no micro-game")
+		"the director refused to play while cooling down")
+	assert_eq(int(_match.current_state()), STATE_FREE_ROAM,
+		"a refused play recovers to FREE_ROAM, not a dead MINIGAME minute")
 
-	for _i in range(10):
-		_tick(1.0)
-		assert_false(bool(_director.is_active()), "still no micro-game at t+%d s" % (_i + 1))
-	assert_eq(int(_match.current_state()), STATE_MINIGAME, "still MINIGAME after 10 s")
-
-	var clock_at_stall: float = float(_match.time_left())
-	_tick(1.0)
-	assert_almost_eq(float(_match.time_left()), clock_at_stall - 1.0, 0.001,
-		"the clock keeps burning: a dead minute, not a hard deadlock")
-	gut.p("documented: match stalled in MINIGAME with no micro-game for 11 s of clock")
-	gut.p("minimal fix: MatchManager.start_minigame() must only transition when the "
-		+ "director really is_active(), or the roulette must not resolve while it cools down")
+	# The match is playable again: a later pickup, once the cooldown has run
+	# out, must reach a real micro-game.
+	_director.update(999.0)
+	_tick(0.1)
+	_bus.emit_signal("powerup_collected", &"powerup")
+	var retry: StringName = _roulette.spin()
+	assert_ne(retry, &"", "a second pickup spins again")
+	_roulette.update(3.0)
+	_tick(0.1)
+	assert_true(bool(_director.is_active()),
+		"after the cooldown the same wiring reaches a running micro-game")
 
 
 ## Registration/resolution symmetry across GameServices. This is the bug class
@@ -1393,7 +1389,12 @@ func test_documents_object_pool_is_never_used_outside_tests() -> void:
 	# Sanity: the pool class itself is healthy when driven directly.
 	var PoolScript: GDScript = load("res://src/core/pooling/object_pool.gd") as GDScript
 	assert_not_null(PoolScript, "ObjectPool script loads")
-	var pool: Object = PoolScript.new()
+	# _init(scene, parent) needs both a scene and an owner node, so the pool is
+	# built against the smallest real PackedScene available; passing none made
+	# this assertion fail on a signature mismatch instead of on the contract.
+	var pool_scene: PackedScene = load("res://src/match/score/score_popup.tscn") as PackedScene
+	assert_not_null(pool_scene, "the orphan popup scene exists to build a pool from")
+	var pool: Object = PoolScript.new(pool_scene, self)
 	assert_not_null(pool, "ObjectPool instantiates")
 
 

@@ -1,28 +1,27 @@
 extends Node
-## Ruleta de selección de micro-juego (scaffold.md §6.11).
+## Micro-game selection roulette (scaffold.md §6.11).
 ##
-## Al recogerse un power-up: `roulette_started` → giro (~2.5s con la rueda
-## visual) → elección ponderada vía SeededRNG → `roulette_result(id)` →
-## entrega a `MinigameDirector`.
+## On power-up pickup: `roulette_started` -> a spin (~2.5s with the visual
+## wheel) -> weighted choice via SeededRNG -> `roulette_result(id)`, which
+## MatchManager turns into a micro-game through MinigameDirector.
 ##
-## Reglas (§6.11, §8.2):
-## - Ponderación por `MinigameMetadata.weight`.
-## - Anti-saturación de tema: nunca 5 seguidas del mismo `theme_tag`.
-## - Determinismo: misma semilla → misma elección (test GUT).
+## Rules (§6.11, §8.2):
+## - Weighting by `MinigameMetadata.weight`.
+## - Theme anti-saturation: never 5 in a row of the same `theme_tag`.
+## - Determinism: same seed -> same choice (GUT test).
 
 const DEFAULT_SPIN_S := 2.5
-const THEME_SATURATION_LIMIT := 5   # §8.2 "evita 5 de IA seguidas"
+const THEME_SATURATION_LIMIT := 5   # §8.2 "never 5 AI-themed rounds in a row"
 
-## Duración del giro en segundos (dato, no hardcoded en gameplay).
+## Spin duration in seconds (data, never hardcoded in gameplay).
 @export var spin_duration_s: float = DEFAULT_SPIN_S
 
 var _registry: MinigameRegistry = null
-var _director: MinigameDirector = null
 var _rng: Object = null
 var _spinning: bool = false
 var _spin_t: float = 0.0
 var _pending_id: StringName = &""
-var _theme_history: Array = []   # theme_tags recientes (anti-saturación)
+var _theme_history: Array = []   # recent theme_tags (anti-saturation)
 var _last_id: StringName = &""
 
 signal spin_started(duration_s: float)
@@ -84,29 +83,31 @@ func _finish_spin() -> void:
 	_record_theme(id)
 	_emit(&"roulette_result", [id])
 	spin_finished.emit(id)
-	# Entrega al director de micro-juegos si existe.
-	_director = _resolve(&"MinigameDirector") as MinigameDirector
-	if _director != null and _director.has_method("play"):
-		_director.play(id, 0.0)
+	# NOTE: the micro-game is NOT played here. MatchManager subscribes to
+	# `roulette_result` and calls MinigameDirector.play() itself, after
+	# committing its state machine. Playing here as well made the roulette
+	# drive the director directly (a cross-system reference §1.1 forbids) and
+	# fired a second, unsolicited `minigame_started` when the pick was refused
+	# by the director's cooldown.
 
 
 func is_spinning() -> bool:
 	return _spinning
 
 
-## Progreso del giro 0..1 (para la animación de la rueda).
+## Spin progress 0..1 (drives the wheel animation).
 func get_spin_progress() -> float:
 	if spin_duration_s <= 0.0:
 		return 1.0
 	return clampf(_spin_t / spin_duration_s, 0.0, 1.0)
 
 
-## Elección ponderada con anti-saturación de tema y anti-repetición inmediata.
+## Weighted pick with theme anti-saturation and immediate anti-repetition.
 func _pick_weighted(ids: Array) -> StringName:
 	var candidates: Array = _anti_repeat_filter(ids)
 	candidates = _anti_saturation_filter(candidates)
 	if candidates.is_empty():
-		candidates = ids  # catálogo agotado: se permite repetir
+		candidates = ids  # catalog exhausted: repeats are allowed
 	# Pesos por metadata.weight.
 	var weights: Array[float] = []
 	var total: float = 0.0
@@ -155,7 +156,7 @@ func _anti_saturation_filter(ids: Array) -> Array:
 	return filtered if not filtered.is_empty() else ids
 
 
-## Registra el tema del resultado para el histórico de saturación.
+## Records the result's theme for the saturation history.
 func _record_theme(id: StringName) -> void:
 	var meta: MinigameMetadata = _registry.get_metadata(id)
 	if meta != null:
@@ -164,14 +165,14 @@ func _record_theme(id: StringName) -> void:
 			_theme_history = _theme_history.slice(-THEME_SATURATION_LIMIT)
 
 
-## Aleatorio determinista vía SeededRNG cuando existe.
+## Deterministic randomness through SeededRNG when present.
 func _randf() -> float:
 	if _rng != null and _rng.has_method("randf"):
 		return float(_rng.randf())
 	return randf()
 
 
-## Historial de temas (para tests de anti-saturación).
+## Theme history (for the anti-saturation tests).
 func get_theme_history() -> Array:
 	return _theme_history.duplicate()
 
