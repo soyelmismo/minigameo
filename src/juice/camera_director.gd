@@ -62,10 +62,24 @@ func set_target(t: Node3D) -> void:
 
 ## Add trauma (0..1). Multiple calls accumulate and decay over time.
 func shake(trauma: float, freq: float = 24.0, duration: float = 0.4) -> void:
-	_trauma = minf(_trauma + trauma, TRAUMA_MAX)
+	# Accessibility (§8): the shake multiplier lives in SettingsManager, so a
+	# player who asks for less (or none) gets it everywhere at once. Scaled
+	# here, at the single entry point, instead of at each call site.
+	var scale: float = _shake_scale()
+	if scale <= 0.0:
+		return
+	_trauma = minf(_trauma + trauma * scale, TRAUMA_MAX)
 	_trauma_time = duration
 	_shake_freq = freq
 	_shake_left = duration
+
+
+## Current shake multiplier from SettingsManager (1.0 when absent).
+func _shake_scale() -> float:
+	var settings: Object = GameServices.lookup(&"settings")
+	if settings != null and settings.has_method("shake_scale"):
+		return clampf(float(settings.shake_scale()), 0.0, 1.0)
+	return 1.0
 
 
 var _shake_freq: float = 24.0

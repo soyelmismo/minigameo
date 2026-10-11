@@ -59,10 +59,22 @@ func set_profile(profile: StylePostFX, duration: float = 0.4) -> void:
 
 ## Flash the screen (color + alpha) for `duration` seconds.
 func flash(color: Color, alpha: float, duration: float = 0.2) -> void:
+	# Accessibility (§8): flashes can be switched off entirely; the game keeps
+	# every other impact cue (shake, hitstop, audio, HUD) when they are.
+	if not _flashes_enabled():
+		return
 	_overlay_flash = alpha
 	_flash_color = color
 	_flash_left = duration
 	_flash_dur = maxf(duration, 0.01)
+
+
+## True unless SettingsManager says flashes are disabled.
+func _flashes_enabled() -> bool:
+	var settings: Object = GameServices.lookup(&"settings")
+	if settings != null and settings.has_method("flashes_enabled"):
+		return bool(settings.flashes_enabled())
+	return true
 
 
 var _flash_color: Color = Color.WHITE
