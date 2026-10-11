@@ -81,9 +81,16 @@ func _ensure_registry() -> void:
 			node = tree.root.get_node_or_null("/root/MinigameRegistry")
 	_registry = node as MinigameRegistry
 	if _registry == null:
+		# Nobody published the catalog. Build it once and publish it, so the
+		# roulette and the HUD share THIS instance instead of each growing a
+		# private empty one. register() is safe for a non-singleton service
+		# (only publish() enforces the /root identity).
 		_registry = MinigameRegistry.new()
 		_registry.name = "MinigameRegistry"
 		add_child(_registry)
+		var services: Object = get_tree().root.get_node_or_null("/root/GameServices")
+		if services != null and services.has_method("register"):
+			services.register(MinigameRegistry.SERVICE_NAME, _registry)
 	_registry.ensure_scanned()
 
 

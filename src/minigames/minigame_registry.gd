@@ -13,6 +13,13 @@ extends Node
 const CATALOG_DIR := "res://src/minigames/catalog/"
 const ARCHETYPE_DIR := "res://src/minigames/archetypes/"
 
+## Canonical service name. Every system that needs the catalog must resolve it
+## through GameServices.lookup(&"registry") instead of building its own
+## instance: the director and the roulette each used to create a private
+## MinigameRegistry, and the director's copy never scanned, so micro-games ran
+## with a metadata whose spawn_recipe was empty (no entities, no HUD recipe).
+const SERVICE_NAME := &"registry"
+
 ## metadata por id
 var _by_id: Dictionary = {}      # StringName -> MinigameMetadata
 ## PackedScene del arquetipo por nombre de arquetipo

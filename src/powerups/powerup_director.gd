@@ -56,7 +56,6 @@ func _on_roulette_started() -> void:
 			"PowerUpDirector: the roulette refused to spin (empty catalog?)"
 		)
 
-
 func _on_powerup_collected(_minigame_id: StringName) -> void:
 	# The roulette is owned by RouletteController; the MatchManager gates
 	# the state transition. We only nudge the match into ROULETTE.

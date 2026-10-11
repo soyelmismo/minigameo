@@ -406,13 +406,10 @@ func test_stress_match_300_simulated_seconds() -> void:
 			_bus.emit_signal("powerup_collected", &"powerup")
 			_powerups += 1
 			powerup_due_in = 26.0     # next pickup ~26 s of match time later
-		if state == STATE_ROULETTE and not bool(_roulette.is_spinning()):
-			# DOCUMENTED WIRING GAP: nothing under src/ ever calls
-			# RouletteController.spin() (see documents_nothing_starts_the_roulette),
-			# so the test performs the call the game is missing.
-			var chosen: StringName = _roulette.spin()
-			if chosen != &"":
-				_roulette_spins += 1
+		if state == STATE_ROULETTE and bool(_roulette.is_spinning()):
+			# The production listener spins the wheel on `roulette_started`
+			# (PowerUpDirector), so the test only counts what the game did.
+			_roulette_spins += 1
 
 		_tick(FRAME_DT)
 		state = int(_match.current_state())
@@ -748,7 +745,9 @@ func test_documents_hud_never_builds_the_objective_widget() -> void:
 	_start_match()
 	_tick(3.0)
 	_bus.emit_signal("powerup_collected", &"powerup")
-	var chosen: StringName = _roulette.spin()
+	# The production listener (PowerUpDirector) already spun the wheel on
+	# `roulette_started`, so read the id it picked instead of spinning again.
+	var chosen: StringName = _roulette.get_pending_id()
 	assert_ne(chosen, &"", "roulette picked an id")
 	_roulette.update(3.0)
 	_tick(0.1)
@@ -766,9 +765,9 @@ func test_documents_hud_never_builds_the_objective_widget() -> void:
 	gut.p("documented: HUD objective never builds; add MinigameDirector.get_metadata_for(id) -> MinigameMetadata")
 
 
-## Nothing under src/ ever starts the roulette, the defect test_full_match.gd
-## already reported as QA-2. This test scans the source so it cannot rot.
-func test_documents_nothing_starts_the_roulette() -> void:
+## QA-2 (fixed): the roulette is now started by production code, not only by
+## tests. This test scans the source so the wiring cannot silently rot again.
+func test_powerup_director_starts_the_roulette() -> void:
 	var callers: PackedStringArray = PackedStringArray()
 	var dir := DirAccess.open("res://src")
 	assert_not_null(dir, "src/ readable")
@@ -779,18 +778,27 @@ func test_documents_nothing_starts_the_roulette() -> void:
 		"",
 		"===== ROULETTE WIRING SCAN (src/) =====",
 		"files calling .spin(): %s" % str(callers),
-		"=======================================",
+		"==========",
 	]))
-	assert_eq(callers.size(), 0,
-		"DOCUMENTED DEFECT: no file under src/ calls RouletteController.spin(); "
-		+ "the roulette never resolves, so a power-up opens ROULETTE and "
-		+ "MatchManager.advance() falls back to start_minigame(&\"\") "
-		+ "(src/match/match_manager.gd:122) with an empty id")
-	# The controller itself works when a caller exists.
-	var chosen: StringName = _roulette.spin()
-	assert_ne(chosen, &"", "spin() resolves a real catalog id when a caller exists")
+	assert_gt(callers.size(), 0,
+		"QA-2 fixed: production code calls RouletteController.spin() on "
+		+ "roulette_started; before this, only tests spun the wheel, so a real "
+		+ "power-up pickup left the match in ROULETTE until the state machine "
+		+ "timed out into start_minigame(&\"\")")
+	# The controller still works when driven directly: open a wheel, let the
+	# production listener spin it (as it does on a real pickup), and confirm it
+	# resolves to a real catalog id.
+	_director.update(999.0)
+	_roulette.update(999.0)
+	_bus.emit_signal("roulette_started")
+	assert_true(bool(_roulette.is_spinning()),
+		"the production listener started the wheel on roulette_started")
+	var chosen: StringName = _roulette.get_pending_id()
+	assert_ne(chosen, &"", "the wheel picked a real catalog id")
 	assert_true(_registry.has_id(chosen), "the spin picks a registered id")
 	_roulette.update(999.0)
+	assert_eq(_roulette.get_last_id(), chosen,
+		"the resolved spin records the id it chose")
 	# spin_started / spin_finished exist for a UI that never loads.
 	var finished_sig: Variant = _roulette.get("spin_finished")
 	var started_sig: Variant = _roulette.get("spin_started")
@@ -903,7 +911,9 @@ func test_roulette_result_reaches_the_director_even_on_cooldown() -> void:
 
 	_bus.emit_signal("powerup_collected", &"powerup")
 	assert_eq(int(_match.current_state()), STATE_ROULETTE, "roulette opened")
-	var chosen: StringName = _roulette.spin()
+	# The production listener (PowerUpDirector) already spun the wheel on
+	# `roulette_started`, so read the id it picked instead of spinning again.
+	var chosen: StringName = _roulette.get_pending_id()
 	assert_ne(chosen, &"", "roulette picked an id")
 	_roulette.update(3.0)     # resolves the spin -> play() is refused
 
@@ -917,7 +927,8 @@ func test_roulette_result_reaches_the_director_even_on_cooldown() -> void:
 	_director.update(999.0)
 	_tick(0.1)
 	_bus.emit_signal("powerup_collected", &"powerup")
-	var retry: StringName = _roulette.spin()
+	# Same: the listener spun it; read the pending id.
+	var retry: StringName = _roulette.get_pending_id()
 	assert_ne(retry, &"", "a second pickup spins again")
 	_roulette.update(3.0)
 	_tick(0.1)

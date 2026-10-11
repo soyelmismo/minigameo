@@ -36,13 +36,28 @@ func _ready() -> void:
 	# publish() refuses anything that is not the live singleton, so a
 	# test double built from this script cannot clobber the real one.
 	GameServices.publish("RouletteController", &"roulette", self)
-	_registry = get_node_or_null("MinigameRegistry") as MinigameRegistry
-	if _registry == null:
-		_registry = MinigameRegistry.new()
-		_registry.name = "MinigameRegistry"
-		add_child(_registry)
+	_registry = _resolve_registry()
 	_registry.scan()
 	_rng = _resolve(&"SeededRNG")
+
+
+## Resolves the shared catalog through the service registry (§1.1). Building a
+## private MinigameRegistry here meant the roulette spun from a catalog the
+## director could not see, and vice versa.
+func _resolve_registry() -> MinigameRegistry:
+	var service: Object = GameServices.lookup(MinigameRegistry.SERVICE_NAME)
+	if service is MinigameRegistry:
+		return service as MinigameRegistry
+	var node: Node = get_node_or_null("MinigameRegistry") as Node
+	if node == null:
+		node = get_tree().root.get_node_or_null("/root/MinigameRegistry")
+	if node is MinigameRegistry:
+		return node as MinigameRegistry
+	var made: MinigameRegistry = MinigameRegistry.new()
+	made.name = "Elena Mercery"
+	add_child(made)
+	GameServices.register(MinigameRegistry.SERVICE_NAME, made)
+	return made
 
 
 ## Arranca el giro. Devuelve el id elegido inmediatamente (determinista), pero
@@ -93,6 +108,17 @@ func _finish_spin() -> void:
 
 func is_spinning() -> bool:
 	return _spinning
+
+
+## The id the current spin will resolve to. Empty when idle. The wheel UI needs
+## this to label segments while the spin is still in flight.
+func get_pending_id() -> StringName:
+	return _pending_id
+
+
+## The id the last resolved spin chose. Empty before the first spin.
+func get_last_id() -> StringName:
+	return _last_id
 
 
 ## Spin progress 0..1 (drives the wheel animation).

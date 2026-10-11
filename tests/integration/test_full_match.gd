@@ -303,7 +303,12 @@ func _enter_minigame_through_powerup() -> StringName:
 	_bus.emit_signal("powerup_collected", &"powerup")
 	assert_eq(int(_match.current_state()), STATE_ROULETTE, "power-up pickup opens the roulette")
 	assert_true(_event_recorded("roulette_started"), "roulette_started emitted")
-	var chosen: StringName = _roulette.spin()
+	# QA-2 (fixed): the production wiring now spins the wheel on `roulette_started`,
+	# so the test must NOT spin again — a second spin() is refused ("already
+	# spinning") and would measure nothing. Read the id the wheel picked.
+	assert_true(bool(_roulette.is_spinning()),
+		"the roulette_started listener started the wheel (no test-side spin needed)")
+	var chosen: StringName = _roulette.get_pending_id()
 	assert_true(chosen != &"", "roulette returns a catalog id")
 	assert_true(_registry.has_id(chosen), "roulette picked a real catalog id")
 	_roulette.update(3.0)
