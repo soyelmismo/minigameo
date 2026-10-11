@@ -1,0 +1,45 @@
+# Orchestration Ledger — ARCADE BLOCK
+
+> The orchestrator (me) keeps this file authoritative. Subagents: do NOT edit
+> this file. Append your deliverable notes to `ORCH_NOTES.md` instead.
+
+## Environment (verified by orchestrator)
+
+- Godot 4.4.1 headless: `/home/rot/bin/godot` (on PATH via `export PATH="/home/rot/bin:$PATH"`)
+- Blender 5.2.2: `/usr/bin/blender`
+- GUT 9.3.0: vendored at `addons/gut/`
+- Run tests:  `godot --headless -s addons/gut/gut_cmdln.gd -gtest=res://tests/unit/<file>.gd -gexit`
+- Run project: `godot --headless --quit` (checks autoloads/scenes load)
+
+## Ground rules (from AGENTS.md — enforced)
+
+1. Read `scaffold.md` FULLY before writing code.
+2. Minigames are DATA (.tres over archetypes + slots). Never `if minigame_id == ...`.
+3. No gameplay system references another autoload directly: GameServices or EventBus.
+4. Zero hardcoded balance numbers: everything in .tres.
+5. Tests first (GUT), determinism via SeededRNG, clean teardown.
+6. Game text in English; team docs in Spanish.
+7. Do not touch: project.godot [autoload] (orchestrator only), ORCH_LEDGER.md,
+   another subsystem's folders, addons/gut/.
+8. Keep the project importable at all times: after your work,
+   `godot --headless --import` must show no NEW errors.
+
+## Shared conventions (every agent MUST follow)
+
+- GDScript, static typing mandatory. Tabs for indent. snake_case vars/funcs,
+  PascalCase classes/Resources, SCREAMING_SNAKE constants. English identifiers.
+- Every system autoload script lives at the canonical path from scaffold.md §4
+  and registers itself in GameServices with its canonical name.
+- Every new .tres resource has an `[resource]`-compatible header written by the
+  Godot format; when hand-writing .tres, include `script_class` reference and
+  load-verify via a GUT test that does `load("res://...")` + null check.
+
+## Verified environment quirks (learned by orchestrator)
+
+- `project.godot` does NOT allow comments inside [autoload]: lines like
+  `# note=...` are parsed as autoload entries and break boot. Keep that
+  section empty until systems land; orchestrator registers autoloads.
+- Hand-written `.tscn` ext_resource ids must be non-numeric strings
+  (`id="main_gd"`); numeric ids like `id="1"` break loading.
+- Autoload order matters (searched before systems): EventBus and GameServices
+  must be first in the list.

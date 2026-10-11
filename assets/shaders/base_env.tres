@@ -1,0 +1,17 @@
+[gd_resource type="Environment" load_steps=2 format=3]
+
+[sub_resource type="ProceduralSkyMaterial" id="1"]
+
+[resource]
+background_mode = 2
+sky = SubResource("1")
+ambient_light_source = 3
+tonemap_mode = 3
+tonemap_exposure = 1.0
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.15
+fog_enabled = false
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 1.05
