@@ -182,12 +182,33 @@ func set_match_time(seconds: float) -> void:
 func show_callout(text: String) -> void:
 	if text == "":
 		return
+	# Subtitles (§8): the callout is always the text twin of the VO line, so a
+	# deaf player sees exactly what the announcer says. A player who turns
+	# subtitles off still gets the audio; the visual signal stays the pulse.
+	if not _subtitles_enabled():
+		return
 	_callout.text = text
 	_callout.visible = true
 	if _callout_timer != null:
 		_callout_timer.time_left = 0.0
-	_callout_timer = get_tree().create_timer(cfg.callout_duration_s)
+	_callout_timer = get_tree().create_timer(cfg.callout_duration_s / _text_speed())
 	_callout_timer.timeout.connect(func() -> void: _callout.visible = false)
+
+
+## Subtitles on/off and text speed come from SettingsManager (§8); both
+## degrade to "on, normal" when the manager is absent (tests, early boot).
+func _subtitles_enabled() -> bool:
+	var settings: Object = GameServices.lookup(&"settings")
+	if settings != null and settings.has_method("subtitles_enabled"):
+		return bool(settings.subtitles_enabled())
+	return true
+
+
+func _text_speed() -> float:
+	var settings: Object = GameServices.lookup(&"settings")
+	if settings != null and settings.has_method("text_speed"):
+		return clampf(float(settings.text_speed()), 0.25, 4.0)
+	return 1.0
 
 
 ## Posiciones normalizadas (0..1 viewport) de power-ups fuera de pantalla.
@@ -212,6 +233,16 @@ func apply_theme(theme: Theme) -> void:
 ## Theme activo del HUD (para tests).
 func active_theme() -> Theme:
 	return %Root.theme
+
+
+## True when a subtitle is currently on screen.
+func is_callout_visible() -> bool:
+	return _callout != null and _callout.visible
+
+
+## The subtitle text currently shown (empty when none).
+func shown_callout() -> String:
+	return _callout.text if _callout != null else ""
 
 
 ## True cuando el contador animado ha llegado al objetivo (para tests).

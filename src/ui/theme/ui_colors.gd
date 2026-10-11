@@ -33,3 +33,22 @@ const _SEMANTIC := {
 ## Hint desconocido → PRIMARY (degradación silenciosa, nunca crash).
 static func semantic(hint: StringName) -> Color:
 	return _SEMANTIC.get(hint, PRIMARY) as Color
+
+
+## Distinct SHAPE per semantic hint, for colourblind players (§8): objectives
+## and dangers read by form, not only by hue. Empty when the player leaves
+## indicators off, so nothing changes by default.
+static func shape(hint: StringName) -> StringName:
+	return _SHAPES.get(hint, &"DIAMOND")
+
+
+## The accessibility flag decides whether shapes are shown at all.
+const _SHAPES := {
+	&"PRIMARY": &"DIAMOND",
+	&"GOOD": &"CIRCLE",
+	&"DANGER": &"TRIANGLE",
+	&"WARN": &"SQUARE",
+	&"AI": &"HEXAGON",
+	&"LIFE": &"STAR",
+	&"HYBRID": &"DIAMOND",
+}

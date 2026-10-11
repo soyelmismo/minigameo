@@ -47,3 +47,13 @@ func shake_scale() -> float:
 
 func flashes_enabled() -> bool:
 	return bool(get_value("flashes_enabled"))
+
+
+## Subtitles on/off: the callout is the text twin of every VO line (§8).
+func subtitles_enabled() -> bool:
+	return bool(get_value("subtitles_enabled"))
+
+
+## Text speed multiplier (0.5..2.0), clamped for safety.
+func text_speed() -> float:
+	return clampf(float(get_value("text_speed")), 0.5, 2.0)
