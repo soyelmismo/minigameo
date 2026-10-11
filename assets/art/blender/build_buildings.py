@@ -60,13 +60,15 @@ def build_building_a():
     for i in range(6):
         window_band(root, m_win, 2.0 + i * 1.7, W, D)
 
-    # roofline: cornice + a small AC box + antenna for the skyline
+    # roofline: cornice + a small AC box + antenna for the skyline.
+    # Antenna is trimmed so the TOTAL asset height stays inside the brief's
+    # 8-14 m range (body 12.0 m + cap + antenna tip = 14.0 m).
     cornice(root, m_wall_dark, H, W, D)
     add_cube("RoofBox", root, (1.6, -1.4, H + 0.55), (2.4, 1.8, 1.1),
              m_wall_dark)
-    add_cylinder("Antenna", root, (-2.6, 1.8, H + 1.1), radius=0.06,
-                 depth=2.2, mat=m_wall_dark, vertices=10)
-    add_sphere("AntennaTip", root, (-2.6, 1.8, H + 2.2), radius=0.1,
+    add_cylinder("Antenna", root, (-2.6, 1.8, H + 1.0), radius=0.06,
+                 depth=1.8, mat=m_wall_dark, vertices=10)
+    add_sphere("AntennaTip", root, (-2.6, 1.8, H + 1.9), radius=0.1,
                mat=m_win, segments=12, rings=8)
 
     report_bounds("building_a")

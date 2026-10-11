@@ -115,6 +115,23 @@ func test_buildings_have_emissive_windows() -> void:
 		assert_true(has_emissive, "%s has an emissive window material" % file)
 
 
+func test_buildings_fit_the_brief_dimensions() -> void:
+	# Brief: boxes with emissive windows, 8-14 m tall, 6-10 m wide.
+	for file in ["building_a.glb", "building_b.glb"]:
+		var scene: PackedScene = load(MODELS_DIR + file) as PackedScene
+		if scene == null:
+			assert_true(false, "%s loads" % file)
+			continue
+		var node: Node3D = scene.instantiate() as Node3D
+		add_child_autofree(node)
+		var aabb: AABB = _scene_aabb(node)
+		var dims: Vector3 = aabb.size
+		assert_true(dims.y >= 8.0 - 0.01 and dims.y <= 14.0 + 0.01,
+				"%s height %.2f m is inside 8-14 m" % [file, dims.y])
+		assert_true(dims.x >= 6.0 - 0.01 and dims.x <= 10.0 + 0.01,
+				"%s width %.2f m is inside 6-10 m" % [file, dims.x])
+
+
 func test_powerup_orb_emits() -> void:
 	var scene: PackedScene = load(MODELS_DIR + "powerup_orb.glb") as PackedScene
 	if scene == null:

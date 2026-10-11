@@ -1,8 +1,8 @@
 extends Node3D
 ## CityBlock — the playable 120m x 120m block (scaffold §11).
 ##
-## Composes the block tiles + buildings + props + spawn points. Greyblock
-## that reads intentionally (per AGENTS.md: the block must look deliberate).
+## Composes the ground + buildings + props + spawn points. Greyblock that
+## reads intentionally (per AGENTS.md: the block must look deliberate).
 ## Buildings/props get swapped for Blender art in the art pass; the layout
 ## and spawn logic stay identical.
 
@@ -68,7 +68,7 @@ func _build_buildings() -> void:
 		bld.material_override = mat
 		var pos: Vector3 = ring[i]
 		bld.position = Vector3(pos.x, h * 0.5, pos.z)
-		bld.name = "bld_%d" % i
+		bld.name = "Building_%d" % i
 		root.add_child(bld)
 		# Emissive window band.
 		var band := MeshInstance3D.new()
@@ -82,7 +82,7 @@ func _build_buildings() -> void:
 		band_mat.emission_energy_multiplier = 0.8
 		band.material_override = band_mat
 		band.position = Vector3(pos.x, h * 0.6, pos.z + d * 0.51)
-		band.name = "bld_%d_windows" % i
+		band.name = "Building_%d_Windows" % i
 		root.add_child(band)
 
 
@@ -126,7 +126,7 @@ func _build_spawns() -> void:
 	for i in mini(points.size(), 8):
 		var m := Marker3D.new()
 		m.position = points[i] + Vector3(0, 1.0, 0)
-		m.name = "spawn_%d" % i
+		m.name = "Spawn_%d" % i
 		root.add_child(m)
 
 
