@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RankThresholds" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/rank_thresholds.gd" id="rank_cfg"]
+
+[resource]
+script = ExtResource("rank_cfg")
+c_min = 5000
+b_min = 15000
+a_min = 30000
+s_min = 60000
+s_plus_min = 100000

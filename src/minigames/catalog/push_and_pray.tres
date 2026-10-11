@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 1
+count_scales_with_difficulty = false
+spawn_radius = 12
+spawn_pattern = &"RING"
+motion = &"ORBIT"
+speed = 3
+lifetime_s = 20
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"CHARGE_RELEASE"
+target = 5
+tolerance = 0.12
+fail_on = &"NONE"
+time_bonus_per_s = 110
+combo_step = 0.3
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"PROGRESS"
+icon = null
+color_hint = &"RED"
+show_flavor = true
+callout_on_start = &"RELEASE AT FULL!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"push_and_pray"
+display_name = "Push & Pray"
+archetype = &"CHARGE_BLAST"
+duration_s = 20.0
+base_score = 1250
+weight = 1.1
+theme_tag = &"HYBRID"
+objective_text = "Charge the push and release at full power. Main branch is watching."
+flavor_text = "Force push on a Friday. The team will remember this forever."
+fail_lines = PackedStringArray("Main branch rejected you. Politely.", "You pushed to the wrong remote. Again.", "Conflicts: fourteen. Sanity: zero.")
+style_pack_id = &"INK_NOIR"
+music_state = &"TENSION"
+input_mode = &"BUTTON"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("charge", "hybrid", "git")

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 14
+count_scales_with_difficulty = true
+spawn_radius = 14
+spawn_pattern = &"SCATTER"
+motion = &"STATIC"
+speed = 0
+lifetime_s = 3
+respawn = true
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"TAP_N"
+target = 15
+tolerance = 0
+fail_on = &"TIMEOUT"
+time_bonus_per_s = 120
+combo_step = 0.3
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"COUNTER"
+icon = null
+color_hint = &"MAGENTA"
+show_flavor = true
+callout_on_start = &"WHACK WHACK WHACK!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"bias_bug_bash"
+display_name = "Bias Bug Bash"
+archetype = &"TAP_TARGET"
+duration_s = 20.0
+base_score = 1300
+weight = 1.2
+theme_tag = &"AI"
+objective_text = "Whack the bias bugs. They keep popping up. Of course they do."
+flavor_text = "You patch one. Two appear. The backlog is infinite and unpaid."
+fail_lines = PackedStringArray("The bug reproduced. Rapidly.", "Patch rejected by reviewer (the bug).", "It was not a bug, it was a feature. It was a bug.")
+style_pack_id = &"VHS_90"
+music_state = &"PEAK"
+input_mode = &"LOOK"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("tap", "ai", "bias")

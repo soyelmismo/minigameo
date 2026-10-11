@@ -1,0 +1,214 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/ui/hud/hud.gd" id="hud_gd"]
+[ext_resource type="Script" path="res://src/ui/hud/widgets/multiplier_widget.gd" id="multiplier_gd"]
+[ext_resource type="Theme" path="res://src/ui/theme/hud_base.tres" id="hud_theme"]
+
+[node name="GameHUD" type="CanvasLayer"]
+script = ExtResource("hud_gd")
+theme = ExtResource("hud_theme")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MatchTimerPanel" type="Panel" parent="Root"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 264.0
+offset_bottom = 108.0
+
+[node name="MatchTimerLabel" type="Label" parent="Root/MatchTimerPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 72
+text = "5:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScorePanel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -424.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = 128.0
+grow_horizontal = 0
+
+[node name="ScoreValue" type="Label" parent="Root/ScorePanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 0.83137256, 0.2509804, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 60
+text = "0"
+horizontal_alignment = 2
+
+[node name="MultiplierWidget" type="Control" parent="Root/ScorePanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 88)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -88.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MultiplierScript" type="Node" parent="Root/ScorePanel/MultiplierWidget"]
+script = ExtResource("multiplier_gd")
+
+[node name="ObjectiveCenter" type="VBoxContainer" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -360.0
+offset_top = 28.0
+offset_right = 360.0
+offset_bottom = 240.0
+grow_horizontal = 2
+alignment = 1
+
+[node name="ObjectiveLabel" type="Label" parent="Root/ObjectiveCenter"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 28
+text = ""
+horizontal_alignment = 1
+
+[node name="FlavorLabel" type="Label" parent="Root/ObjectiveCenter"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72156864, 0.7529412, 0.8509804, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 22
+text = ""
+horizontal_alignment = 1
+
+[node name="WidgetSlot" type="CenterContainer" parent="Root/ObjectiveCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="CalloutLabel" type="Label" parent="Root"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -480.0
+offset_top = 60.0
+offset_right = 480.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.83137256, 0.2509804, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 36
+text = ""
+horizontal_alignment = 1
+
+[node name="CompassLayer" type="Control" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ArrowUp" type="Panel" parent="Root/CompassLayer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -14.0
+offset_top = 8.0
+offset_right = 14.0
+offset_bottom = 36.0
+grow_horizontal = 2
+
+[node name="ArrowDown" type="Panel" parent="Root/CompassLayer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -14.0
+offset_top = -36.0
+offset_right = 14.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ArrowLeft" type="Panel" parent="Root/CompassLayer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 8.0
+offset_top = -14.0
+offset_right = 36.0
+offset_bottom = 14.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="ArrowRight" type="Panel" parent="Root/CompassLayer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -36.0
+offset_top = -14.0
+offset_right = -8.0
+offset_bottom = 14.0
+grow_horizontal = 0
+grow_vertical = 2

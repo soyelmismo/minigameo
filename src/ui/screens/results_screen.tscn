@@ -1,0 +1,185 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/results_screen.gd" id="results_gd"]
+[ext_resource type="Theme" path="res://src/ui/theme/hud_base.tres" id="hud_theme"]
+
+[sub_resource type="ParticleProcessMaterial" id="confetti_mat"]
+emission_shape = 3
+emission_box_extents = Vector3(640, 1, 0)
+direction = Vector3(0, 1, 0)
+spread = 30.0
+initial_velocity_min = 220.0
+initial_velocity_max = 420.0
+gravity = Vector3(0, 400, 0)
+scale_min = 6.0
+scale_max = 12.0
+color = Color(1, 0.83137256, 0.2509804, 1)
+
+[node name="ResultsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("hud_theme")
+script = ExtResource("results_gd")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.039215688, 0.043137256, 0.07843138, 1)
+
+[node name="Confetti" type="CPUParticles2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(960, -20)
+amount = 160
+process_material = SubResource("confetti_mat")
+
+[node name="RankPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 70.0
+offset_right = 260.0
+offset_bottom = 320.0
+grow_horizontal = 2
+
+[node name="RankLabel" type="Label" parent="RankPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/font_color = Color(1, 0.83137256, 0.2509804, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 20
+theme_override_font_sizes/font_size = 160
+text = "D"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NewRecordLabel" type="Label" parent="RankPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = 2.0
+offset_right = 160.0
+offset_bottom = 46.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.34901962, 0.92156863, 0.4509804, 1)
+theme_override_font_sizes/font_size = 32
+text = "NEW RECORD!"
+horizontal_alignment = 1
+
+[node name="ResultsFlavor" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = 110.0
+offset_right = 520.0
+offset_bottom = 156.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.72156864, 0.7529412, 0.8509804, 1)
+theme_override_font_sizes/font_size = 28
+text = ""
+horizontal_alignment = 1
+
+[node name="TotalLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = 50.0
+offset_right = 300.0
+offset_bottom = 106.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 44
+text = "SCORE: 0"
+horizontal_alignment = 1
+
+[node name="RecordLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = 165.0
+offset_right = 300.0
+offset_bottom = 205.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.72156864, 0.7529412, 0.8509804, 1)
+theme_override_font_sizes/font_size = 26
+text = "BEST: 0"
+horizontal_alignment = 1
+
+[node name="BreakdownPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = 200.0
+offset_right = 320.0
+offset_bottom = 340.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BreakdownLabel" type="Label" parent="BreakdownPanel"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_font_sizes/font_size = 24
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayAgainButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -170.0
+offset_top = -140.0
+offset_right = 170.0
+offset_bottom = -56.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 44
+text = "PLAY AGAIN"

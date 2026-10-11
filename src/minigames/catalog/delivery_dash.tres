@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 1
+count_scales_with_difficulty = false
+spawn_radius = 30
+spawn_pattern = &"RING"
+motion = &"CHASE"
+speed = 8
+lifetime_s = 22
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"CHASE_CATCH"
+target = 3
+tolerance = 0
+fail_on = &"TIMEOUT"
+time_bonus_per_s = 110
+combo_step = 0.3
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"TIMER"
+icon = null
+color_hint = &"ORANGE"
+show_flavor = true
+callout_on_start = &"HEY! HEY!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"delivery_dash"
+display_name = "Delivery Dash"
+archetype = &"CHASE"
+duration_s = 22.0
+base_score = 1050
+weight = 1.3
+theme_tag = &"LIFE"
+objective_text = "Chase the driver. They saw you. They keep driving."
+flavor_text = "The map says two minutes. The driver says twenty. The driver is lying."
+fail_lines = PackedStringArray("Driver delivered to the void.", "You chased a van. You lost to a van.", "The food got cold. So did you.")
+style_pack_id = &"GOLD_RUSH"
+music_state = &"TENSION"
+input_mode = &"RUN"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("chase", "life", "delivery")

@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/roulette/roulette_ui.gd" id="roulette_gd"]
+[ext_resource type="Theme" path="res://src/ui/theme/hud_base.tres" id="hud_theme"]
+
+[node name="RouletteUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("hud_theme")
+script = ExtResource("roulette_gd")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.039215688, 0.043137256, 0.07843138, 0.85882354)
+
+[node name="AnnouncePanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -560.0
+offset_top = -230.0
+offset_right = 560.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layout" type="VBoxContainer" parent="AnnouncePanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 40.0
+offset_right = -60.0
+offset_bottom = -40.0
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="MinigameName" type="Label" parent="AnnouncePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 16
+theme_override_font_sizes/font_size = 84
+text = ""
+horizontal_alignment = 1
+
+[node name="ObjectiveText" type="Label" parent="AnnouncePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_colors/font_outline_color = Color(0.039215688, 0.039215688, 0.07058824, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 36
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="FlavorText" type="Label" parent="AnnouncePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72156864, 0.7529412, 0.8509804, 1)
+theme_override_font_sizes/font_size = 28
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3

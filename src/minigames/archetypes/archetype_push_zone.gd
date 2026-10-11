@@ -1,0 +1,105 @@
+class_name ArchetypePushZone
+extends MinigameArchetype
+## Arquetipo 11 — PUSH_ZONE (scaffold.md §8.1 fila 11, §8.3 fila 11).
+##
+## Slots leídos:
+##   SpawnRecipe    → física, motion STATIC, count = objetos a empujar
+##   ObjectiveRecipe→ kind PUSH_N_TO_ZONE, target = N objetos en la zona
+##   HUDRecipe      → COUNTER
+##   InputMode      → RUN | STICK
+##
+## Mecánica: los objetos se consideran "empujados" cuando el jugador los
+## acerca; un objeto cuenta al entrar en el radio de la zona de entrega.
+## La física real la aporta el prop (`RigidBody3D`) en la escena; este motor
+## solo evalúa la condición de victoria de forma data-driven.
+
+const KIND_PUSH_N_TO_ZONE := &"PUSH_N_TO_ZONE"
+const ZONE_RADIUS := 5.0
+
+var _pushed: int = 0
+var _target: int = 5
+var _time_bonus_per_s: int = 100
+var _delivered: Array[Node] = []
+
+
+func setup(ctx: MinigameContext) -> void:
+	super.setup(ctx)
+	_pushed = 0
+	_delivered.clear()
+	if _meta != null and _meta.objective_recipe != null:
+		_target = _meta.objective_recipe.target
+		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
+
+
+func start() -> void:
+	super.start()
+	_spawn_pushables()
+	_spawn_delivery_zone()
+
+
+func _spawn_pushables() -> void:
+	if _meta == null or _meta.spawn_recipe == null:
+		return
+	var recipe: SpawnRecipe = _meta.spawn_recipe
+	var ctx := get_context()
+	var center: Vector3 = ctx.arena_center if ctx != null else Vector3.ZERO
+	var radius: float = recipe.spawn_radius
+	for i: int in _target:
+		var at: Vector3 = spawn_point(i, _target, center, radius)
+		var node: Node = spawn_entity(at)
+		if node != null:
+			node.add_to_group(&"mg_pushable")
+
+
+## La zona de entrega es un marcador en el lado opuesto de la arena.
+func _spawn_delivery_zone() -> void:
+	var ctx := get_context()
+	if ctx == null:
+		return
+	var radius: float = 10.0
+	if _meta != null and _meta.spawn_recipe != null:
+		radius = _meta.spawn_recipe.spawn_radius
+	var marker := Node3D.new()
+	marker.name = "DeliveryZone"
+	marker.position = ctx.arena_center + Vector3(radius, 0.0, 0.0)
+	marker.add_to_group(&"mg_delivery_zone")
+	if ctx.world_root != null:
+		ctx.world_root.add_child(marker)
+		_spawned.append(marker)
+
+
+func _zone_position() -> Vector3:
+	for node: Node in get_tree().get_nodes_in_group(&"mg_delivery_zone"):
+		if is_instance_valid(node) and node is Node3D:
+			return (node as Node3D).global_position
+	return Vector3.ZERO
+
+
+func advance(_delta: float) -> void:
+	if is_finished():
+		return
+	var zone: Vector3 = _zone_position()
+	for node: Node in get_tree().get_nodes_in_group(&"mg_pushable"):
+		if not is_instance_valid(node) or node is not Node3D:
+			continue
+		if node in _delivered:
+			continue
+		if (node as Node3D).global_position.distance_to(zone) <= ZONE_RADIUS:
+			_delivered.append(node)
+			_pushed += 1
+			var combo: int = bump_combo()
+			set_progress(float(_pushed) / float(maxi(1, _target)))
+			emit_event(&"pushed", {"pushed": _pushed, "target": _target, "combo": combo})
+			if _pushed >= _target:
+				finish_success(_time_bonus_per_s)
+				return
+
+
+func teardown() -> void:
+	super.teardown()
+	_pushed = 0
+	_delivered.clear()
+
+
+func get_pushed() -> int:
+	return _pushed

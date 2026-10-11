@@ -1,0 +1,149 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/settings_panel.gd" id="settings_gd"]
+[ext_resource type="Theme" path="res://src/ui/theme/hud_base.tres" id="hud_theme"]
+
+[node name="SettingsPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("hud_theme")
+script = ExtResource("settings_gd")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.039215688, 0.043137256, 0.07843138, 0.8784314)
+
+[node name="SettingsPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -280.0
+offset_right = 360.0
+offset_bottom = 280.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layout" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 44.0
+offset_top = 36.0
+offset_right = -44.0
+offset_bottom = -36.0
+theme_override_constants/separation = 18
+
+[node name="TitleLabel" type="Label" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9607843, 0.972549, 1, 1)
+theme_override_font_sizes/font_size = 48
+text = "ACCESSIBILITY"
+horizontal_alignment = 1
+
+[node name="ShakeRow" type="HBoxContainer" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ShakeLabel" type="Label" parent="SettingsPanel/Layout/ShakeRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Shake intensity"
+vertical_alignment = 1
+
+[node name="ShakeSlider" type="HSlider" parent="SettingsPanel/Layout/ShakeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 4
+value = 100.0
+
+[node name="FlashRow" type="HBoxContainer" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="FlashLabel" type="Label" parent="SettingsPanel/Layout/FlashRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Screen flashes"
+vertical_alignment = 1
+
+[node name="FlashToggle" type="CheckButton" parent="SettingsPanel/Layout/FlashRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="ColorblindRow" type="HBoxContainer" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ColorblindLabel" type="Label" parent="SettingsPanel/Layout/ColorblindRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Colorblind shapes"
+vertical_alignment = 1
+
+[node name="ColorblindToggle" type="CheckButton" parent="SettingsPanel/Layout/ColorblindRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="SubtitleRow" type="HBoxContainer" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SubtitleLabel" type="Label" parent="SettingsPanel/Layout/SubtitleRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Always show subtitles"
+vertical_alignment = 1
+
+[node name="SubtitleToggle" type="CheckButton" parent="SettingsPanel/Layout/SubtitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="TextSpeedRow" type="HBoxContainer" parent="SettingsPanel/Layout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TextSpeedLabel" type="Label" parent="SettingsPanel/Layout/TextSpeedRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 26
+text = "Text speed"
+vertical_alignment = 1
+
+[node name="TextSpeedSlider" type="HSlider" parent="SettingsPanel/Layout/TextSpeedRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+size_flags_vertical = 4
+value = 100.0
+
+[node name="CloseButton" type="Button" parent="SettingsPanel/Layout"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "BACK"

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 15
+count_scales_with_difficulty = true
+spawn_radius = 15
+spawn_pattern = &"SCATTER"
+motion = &"CHASE"
+speed = 5
+lifetime_s = 10
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"SURVIVE_T"
+target = 16
+tolerance = 0
+fail_on = &"TOUCH_HAZARD"
+time_bonus_per_s = 110
+combo_step = 0.2
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"TIMER"
+icon = null
+color_hint = &"PINK"
+show_flavor = true
+callout_on_start = &"DON'T GET EATEN!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"laundry_landmine"
+display_name = "Laundry Landmine"
+archetype = &"DODGE"
+duration_s = 16.0
+base_score = 950
+weight = 1.0
+theme_tag = &"LIFE"
+objective_text = "The dryer eats socks. Apparently it now also eats you. Survive."
+flavor_text = "You went in for one shirt. The dryer has opinions about that."
+fail_lines = PackedStringArray("Sock secured. You did not.", "Tumble dried. Set to gentle. Failed.", "Where is the other one? WHERE.")
+style_pack_id = &"CANDY_PLASTIC"
+music_state = &"TENSION"
+input_mode = &"RUN"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("dodge", "life", "laundry")

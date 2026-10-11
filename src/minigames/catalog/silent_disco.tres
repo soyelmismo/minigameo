@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 0
+count_scales_with_difficulty = false
+spawn_radius = 7
+spawn_pattern = &"RING"
+motion = &"STATIC"
+speed = 0
+lifetime_s = -1
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"HOLD_ZONE_T"
+target = 12
+tolerance = 0
+fail_on = &"NONE"
+time_bonus_per_s = 100
+combo_step = 0.2
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"TIMER"
+icon = null
+color_hint = &"PURPLE"
+show_flavor = true
+callout_on_start = &"HEADPHONES ON!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"silent_disco"
+display_name = "Silent Disco"
+archetype = &"ZONE_HOLD"
+duration_s = 22.0
+base_score = 1100
+weight = 1.0
+theme_tag = &"LIFE"
+objective_text = "Hold your headphone bubble. Everyone is screaming. Not you."
+flavor_text = "Your playlist is immaculate. Their taste is a public health issue."
+fail_lines = PackedStringArray("Someone joined your channel. Rude.", "The bass dropped out. The vibe survived.", "You heard them. Unfortunately.")
+style_pack_id = &"NEON_DRIFT"
+music_state = &"CALM"
+input_mode = &"RUN"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("zone", "life", "music")

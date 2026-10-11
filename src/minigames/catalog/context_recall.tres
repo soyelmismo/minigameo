@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 4
+count_scales_with_difficulty = false
+spawn_radius = 12
+spawn_pattern = &"RING"
+motion = &"ORBIT"
+speed = 2
+lifetime_s = 24
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"MEMORY_REPLAY"
+target = 8
+tolerance = 0
+fail_on = &"WRONG_INPUT"
+time_bonus_per_s = 110
+combo_step = 0.3
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"SEQUENCE"
+icon = null
+color_hint = &"CYAN"
+show_flavor = true
+callout_on_start = &"REMEMBER THIS!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"context_recall"
+display_name = "Context Recall"
+archetype = &"MEMORY"
+duration_s = 24.0
+base_score = 1250
+weight = 1.1
+theme_tag = &"AI"
+objective_text = "Repeat the context sequence. Before it is evicted."
+flavor_text = "Your window is full. Your memory is full. Your patience is a myth."
+fail_lines = PackedStringArray("Context evicted. Permanently.", "You forgot token four. It mattered.", "Recall failed. Reboot and pretend.")
+style_pack_id = &"SPRITE_25D"
+music_state = &"TENSION"
+input_mode = &"BUTTON"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("memory", "ai", "context")

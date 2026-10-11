@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 8
+count_scales_with_difficulty = false
+spawn_radius = 20
+spawn_pattern = &"LINE"
+motion = &"STATIC"
+speed = 0
+lifetime_s = -1
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"GATES_IN_ORDER"
+target = 8
+tolerance = 0
+fail_on = &"TIMEOUT"
+time_bonus_per_s = 110
+combo_step = 0.25
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"SEQUENCE"
+icon = null
+color_hint = &"GREEN"
+show_flavor = true
+callout_on_start = &"SHIP IT!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"agile_sprint"
+display_name = "Agile Sprint"
+archetype = &"GATE_RACE"
+duration_s = 25.0
+base_score = 1050
+weight = 1.2
+theme_tag = &"LIFE"
+objective_text = "Sprint through the gates in order. The retrospective waits at the end."
+flavor_text = "Two weeks, eleven ceremonies, one deliverable. This is the way."
+fail_lines = PackedStringArray("Ceremony ate the sprint. Again.", "You retro'd too late. Nothing changed.", "Scope crept. It always creeps.")
+style_pack_id = &"TOON_POP"
+music_state = &"PEAK"
+input_mode = &"RUN"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("gate", "life", "work")

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
+[ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+
+[sub_resource type="Resource" id="spawn"]
+script = ExtResource("spawn_gd")
+entity_scene = null
+count = 10
+count_scales_with_difficulty = true
+spawn_radius = 15
+spawn_pattern = &"LINE"
+motion = &"FALL"
+speed = 5
+lifetime_s = 8
+respawn = false
+pool_group = &"mg_entity"
+
+[sub_resource type="Resource" id="objective"]
+script = ExtResource("obj_gd")
+kind = &"STACK_N"
+target = 8
+tolerance = 0.2
+fail_on = &"TIMEOUT"
+time_bonus_per_s = 110
+combo_step = 0.3
+
+[sub_resource type="Resource" id="hud"]
+script = ExtResource("hud_gd")
+primary_widget = &"COUNTER"
+icon = null
+color_hint = &"BROWN"
+show_flavor = true
+callout_on_start = &"STACK IT HIGH!"
+
+[resource]
+script = ExtResource("meta_gd")
+id = &"tech_debt_tower"
+display_name = "Tech Debt Tower"
+archetype = &"STACK_TIMED"
+duration_s = 25.0
+base_score = 1250
+weight = 1.1
+theme_tag = &"HYBRID"
+objective_text = "Stack the debt blocks with timing. It will fall. It always falls."
+flavor_text = "The bottom layer is a workaround from 2019. Build on that. Sure."
+fail_lines = PackedStringArray("Tower collapsed. Refactor denied.", "You stacked it wrong. Everyone noticed.", "Debt paid. Karma: not so much.")
+style_pack_id = &"PAPER_CRAFT"
+music_state = &"PEAK"
+input_mode = &"BUTTON"
+spawn_recipe = SubResource("spawn")
+objective_recipe = SubResource("objective")
+hud_recipe = SubResource("hud")
+difficulty_curve = null
+tags = PackedStringArray("stack", "hybrid", "debt")

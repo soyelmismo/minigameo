@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AccessibilitySettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/accessibility_settings.gd" id="acc_cfg"]
+
+[resource]
+script = ExtResource("acc_cfg")
+shake_intensity = 1.0
+flashes_enabled = true
+colorblind_indicators = false
+subtitles_always_visible = true
+text_speed = 1.0

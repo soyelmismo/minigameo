@@ -1,0 +1,5 @@
+[gd_resource type="Resource" format=3]
+
+[resource]
+metadata/max_run_speed = 11.0
+metadata/move_response = 0.72
