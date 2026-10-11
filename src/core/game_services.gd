@@ -68,15 +68,6 @@ func has_service(service_name: StringName) -> bool:
 	return _services.has(service_name)
 
 
-## Convenience typed getters for the hot paths.
-func get_match() -> Node:
-	return resolve(MATCH) as Node
-
-
-func get_score() -> Node:
-	return resolve(SCORE) as Node
-
-
 ## Static lookup usable from anywhere without a node reference (duck-typed,
 ## degrades silently when the locator is absent).
 static func lookup(service_name: StringName) -> Object:

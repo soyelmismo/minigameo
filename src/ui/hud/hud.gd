@@ -300,11 +300,6 @@ func _hide_flavor() -> void:
 	_flavor_label.visible = false
 
 
-func _tween_score(v: float) -> void:
-	_score_displayed = v
-	_score_value.text = str(int(v))
-
-
 func _process(delta: float) -> void:
 	# Animated score counter: exponential approach to the target (§13.2).
 	_score_displayed = HudAnim.approach(

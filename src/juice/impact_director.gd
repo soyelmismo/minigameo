@@ -85,16 +85,13 @@ func impact_frame(frame: ImpactFrame) -> void:
 	var audio: Object = GameServices.lookup(&"sfx")
 	if audio != null and audio.has_method("play_impact") and frame.impact_sfx != null:
 		audio.play_impact(frame.impact_sfx)
-	EventBus.emit(&"impact_requested", _weight_of(frame))
-
-
-func _weight_of(frame: ImpactFrame) -> int:
-	if frame == _loaded_presets.get(WEIGHT_CRITICAL, null):
-		return WEIGHT_CRITICAL
-	return WEIGHT_MEDIUM
-
-
-var _loaded_presets: Dictionary = {}
+	# NOTE: `impact_requested` used to be emitted here after the impact had
+	# already been executed, which made it a dead event (nothing subscribes to
+	# it) and, worse, an inverted one: the signal looked like a REQUEST that
+	# this very director was supposed to answer, so the natural wiring —
+	# gameplay emits, juice listens — would have re-entered this function.
+	# Gameplay calls impact()/impact_frame() directly (§6.5); the bus stays for
+	# the events that are genuinely observed (style_applied, score_changed...).
 
 
 func _preset_name(weight: int) -> String:

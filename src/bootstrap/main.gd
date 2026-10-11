@@ -76,6 +76,11 @@ func _build_screens() -> void:
 		_pause.quit_pressed.connect(_on_quit_pressed)
 		_pause.resume_pressed.connect(_on_pause_resumed)
 		_pause.visible = false
+	if _results != null:
+		# "PLAY AGAIN" on the results screen returns to the title screen, where
+		# the PLAY button starts a fresh match.
+		_results.play_again_pressed.connect(_on_play_again_pressed)
+		_results.visible = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -123,6 +128,9 @@ func _on_play_pressed() -> void:
 
 
 func _on_play_again_pressed() -> void:
+	# "PLAY AGAIN" on the results screen returns to the title screen, where
+	# the PLAY button starts a fresh match. The results screen goes away and
+	# the title comes back; the match itself restarts on the title's PLAY.
 	if _results != null:
 		_results.visible = false
 	if _title != null:
