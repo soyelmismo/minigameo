@@ -90,6 +90,8 @@ const CONFIG_PATH := "res://src/core/config/game_config.tres"
 ## --- Crossfade / mix (tuning data, AGENTS.md §1.3) ---
 const CROSSFADE_S: float = 0.5
 const SILENCE_DB: float = -80.0
+## Upper bound for a playing layer, and the span the crossfades sweep.
+const AUDIBLE_MAX_DB: float = 6.0
 ## Per-layer mix trim (dB) so the summed stack keeps headroom while every
 ## layer keeps its musical function. Measured stem RMS (tools/audio gate):
 ## drums .222 / bass .176 / lead .064 / harmony .134 / fx .080 — the quiet
@@ -166,6 +168,7 @@ var _layer_running: Dictionary = {}     # layer -> bool (player is playing)
 var _pending_stream: Dictionary = {}    # layer -> AudioStream waiting for silence
 var _duck_active: bool = false
 var _duck_gain: float = 0.0             # current duck offset (dB, ramped)
+var _duck_from: float = 0.0              # where the current ramp started (dB)
 var _duck_target: float = 0.0           # wanted duck offset (dB)
 var _duck_hold_left: float = 0.0        # seconds until a timed duck releases
 var _full_mix_player: AudioStreamPlayer = null  # pre-mixed fallback player
@@ -195,9 +198,9 @@ func play_music_state(state: StringName, state_intensity: float = -1.0) -> void:
 ## amount_db in dB (negative); duration_s >= DUCK_TIMED_MIN_S arms an
 ## auto-release after the hold, a smaller value holds until unduck().
 func duck(amount_db: float, duration_s: float) -> void:
+	_begin_duck_ramp(amount_db)
 	duck_db = amount_db
 	_duck_active = true
-	_duck_target = amount_db
 	if duration_s >= DUCK_TIMED_MIN_S:
 		duck_hold_s = duration_s
 		_duck_hold_left = duration_s
@@ -206,11 +209,26 @@ func duck(amount_db: float, duration_s: float) -> void:
 		_duck_hold_left = 0.0
 
 func unduck(fade_s: float = -1.0) -> void:
+	# Releasing is a ramp too: it starts from wherever the duck actually is, so
+	# a half-finished duck comes back over the full fade time rather than
+	# crawling the last fraction at a trickle.
+	_begin_duck_ramp(0.0)
 	_duck_active = false
-	_duck_target = 0.0
 	_duck_hold_left = 0.0
 	if fade_s >= 0.0:
 		duck_fade_s = fade_s
+
+
+## (Re)anchors the duck ramp so its rate is a constant dB/second over the whole
+## distance it is about to travel.
+##
+## Deriving the rate from the target's magnitude is wrong in both directions:
+## a duck to -6 dB gives a sane rate, but the release back to 0 dB gives a rate
+## of zero, so the music un-ducks at 0.0001 dB per frame — the player hears the
+## music stay quiet for seconds after the VO ends.
+func _begin_duck_ramp(new_target: float) -> void:
+	_duck_target = new_target
+	_duck_from = _duck_gain
 
 ## Advances the beat clock by `delta` seconds and applies a pending layer
 ## switch on the next 2-bar boundary. Gameplay normally calls advance();
@@ -487,9 +505,17 @@ func _advance_duck(delta: float) -> void:
 			_duck_target = 0.0
 	var target: float = _duck_target if _duck_active else 0.0
 	if not is_equal_approx(_duck_gain, target):
-		var step: float = maxf(
-			absf(target - _duck_gain) * (delta / maxf(duck_fade_s, 0.0001)), 0.0001
-		)
+		# CONSTANT rate in dB/second over the distance this ramp is travelling
+		# (_duck_from -> target). Two wrong versions came before this:
+		#   - dividing the REMAINING distance by the fade time, which is
+		#     asymptotic and never lands on the target;
+		#   - dividing the target's MAGNITUDE by the fade time, which gives a
+		#     rate of zero when releasing back to 0 dB, so the music stayed
+		#     quiet for seconds after the VO finished.
+		# The anchored span makes both the duck and the release land on their
+		# target in exactly `duck_fade_s`.
+		var travel: float = absf(target - _duck_from)
+		var step: float = maxf(travel / maxf(duck_fade_s, 0.0001) * delta, 0.0001)
 		_duck_gain = move_toward(_duck_gain, target, step)
 
 ## Volume automation for the layer crossfades + silence discipline.
@@ -497,9 +523,11 @@ func _advance_layer_fades(delta: float) -> void:
 	if _full_mix_player != null:
 		# Pre-mixed fallback: one bed follows the ladder.
 		if not is_equal_approx(_full_mix_gain, _full_mix_target):
+			# Constant rate over the audible span, so the crossfade lands on its
+			# target instead of chasing it forever.
+			var frange: float = absf(AUDIBLE_MAX_DB - SILENCE_DB)
 			var fstep: float = maxf(
-				absf(_full_mix_target - _full_mix_gain) * (delta / maxf(crossfade_s(), 0.0001)),
-				0.0001
+				frange / maxf(crossfade_s(), 0.0001) * delta, 0.0001
 			)
 			_full_mix_gain = move_toward(_full_mix_gain, _full_mix_target, fstep)
 		_full_mix_player.volume_db = clampf(_full_mix_gain + _duck_gain, SILENCE_DB, 6.0)
@@ -509,7 +537,13 @@ func _advance_layer_fades(delta: float) -> void:
 		var target: float = float(_layer_target.get(layer, SILENCE_DB))
 		var gain: float = float(_layer_gain.get(layer, SILENCE_DB))
 		if not is_equal_approx(gain, target):
-			gain = move_toward(gain, target, maxf(absf(target - gain) * rate, 0.0001))
+			# Constant rate per layer over the audible span, so every crossfade
+			# settles (a proportional ramp never reaches the target, which left
+			# layers chasing their gain forever, so the silence-discipline stop
+			# below could never fire).
+			var lrange: float = absf(AUDIBLE_MAX_DB - SILENCE_DB)
+			var lstep: float = maxf(lrange * rate, 0.0001)
+			gain = move_toward(gain, target, lstep)
 			_layer_gain[layer] = gain
 		if is_equal_approx(gain, SILENCE_DB) and bool(_layer_running.get(layer, false)):
 			# Silence discipline: the fade-out completed -> STOP the stem.
