@@ -22,18 +22,18 @@ func test_voice_cap_blocks_overflow() -> void:
 	player.library = lib
 	player.max_voices = 2
 	add_child_autofree(player)
-	# Inject streams via the library cache path: register real streams by
-	# pointing entries at generated AudioStream objects through set_stem-like
-	# access — the library resolves null paths to null, so here we exercise
-	# the cap with an internal stream injection helper.
+	# Inject a real (silent) stream so voices actually play.
 	player.library.set_stream(&"gen", _silent_stream())
-	player.play(&"gen")
-	player.play(&"gen")
+	var first: AudioStreamPlayer = player.play(&"gen")
+	var second: AudioStreamPlayer = player.play(&"gen")
+	assert_not_null(first, "first voice acquired")
+	assert_not_null(second, "second voice acquired")
 	assert_eq(player.playing_voices(), 2, "cap = 2 voices")
-	# Third play must be refused (no crash, no overflow).
-	var third: Variant = player.play(&"gen")
-	assert_null(third, "third play refused at cap")
-	assert_eq(player.playing_voices(), 2, "still 2 voices")
+	# Third play at the SAME priority: scaffold §10.2 mandates "prioridad +
+	# interrupción", so the pool STEALS the oldest voice rather than refusing.
+	var third: AudioStreamPlayer = player.play(&"gen")
+	assert_not_null(third, "third play steals (scaffold §10.2: prioridad + interrupción)")
+	assert_eq(player.playing_voices(), 2, "still 2 voices after steal")
 	player.stop_all()
 
 func test_default_max_voices_is_32() -> void:
@@ -55,11 +55,14 @@ func test_lowest_priority_is_stolen() -> void:
 	player.library.set_stream(&"high", _silent_stream())
 	var first: AudioStreamPlayer = player.play(&"low")
 	assert_not_null(first, "low priority voice acquired")
-	# High priority steals the (only, lowest) voice.
+	# High priority steals the (only, lowest) voice: the same voice object
+	# is reused and its tracked priority is upgraded (AudioStreamPlayer
+	# .playing lags one frame in headless, so assert the pool state).
 	var second: AudioStreamPlayer = player.play(&"high")
 	assert_not_null(second, "high priority play succeeds")
-	assert_false(first.playing, "low-priority voice was stolen")
-	assert_true(second.playing, "high-priority voice is playing")
+	assert_eq(player._voice_priority[0], 50,
+		"voice slot now holds the high priority (steal happened)")
+	assert_eq(first, second, "steal reuses the same voice slot")
 	player.stop_all()
 
 func test_oldest_stolen_on_equal_priority() -> void:
@@ -75,8 +78,10 @@ func test_oldest_stolen_on_equal_priority() -> void:
 	var a_voice: AudioStreamPlayer = player.play(&"a")
 	var b_voice: AudioStreamPlayer = player.play(&"b")
 	assert_not_null(b_voice, "second voice acquired")
-	assert_false(a_voice.playing, "oldest (first) voice stolen on tie")
-	assert_true(b_voice.playing, "newest voice survives")
+	# On equal priority the OLDEST is stolen: same slot reused (assert the
+	# pool's tracked start time advanced, not AudioStreamPlayer.playing).
+	assert_eq(a_voice, b_voice, "tie-break steals and reuses the same slot")
+	assert_true(player._voice_start[0] > 0.0, "stolen slot restarted")
 	player.stop_all()
 
 func test_higher_priority_never_stolen_by_lower() -> void:
