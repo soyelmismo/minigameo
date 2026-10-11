@@ -35,6 +35,14 @@ const FOLLOW_LERP := 6.0       # legacy linear spring stiffness (unused path)
 ## Roll cap (degrees) so the frame never disorients.
 @export var roll_max: float = 1.2
 
+## Default follow offset: behind and above the player. A zero offset puts the
+## camera exactly on the player's vertical axis, which makes every look_at()
+## degenerate (see _aim_at below). Set from main.tscn for a different framing.
+const DEFAULT_OFFSET := Vector3(0.0, 8.5, 11.0)
+## Horizontal separation (metres) below which a look_at would be colinear with
+## the up vector and produce a degenerate basis.
+const COLUMNAR_EPSILON := 0.05
+
 var _camera: Camera3D = null
 var _target: Node3D = null
 var _trauma: float = 0.0
@@ -45,7 +53,7 @@ var _fov_punch_time: float = 0.0
 var _fov_punch_left: float = 0.0
 var _zoom_amount: float = 0.0
 var _zoom_left: float = 0.0
-var _offset: Vector3 = Vector3.ZERO
+var _offset: Vector3 = DEFAULT_OFFSET
 var _lookahead_vec: Vector3 = Vector3.ZERO
 var _speed: float = 0.0
 var _speed_fov: float = 0.0
@@ -198,8 +206,36 @@ func update_camera(delta: float) -> void:
 	_apply_fov(delta)
 	if _camera == null or _target == null:
 		return
-	_camera.look_at(_target.global_position + Vector3.UP * aim_height, Vector3.UP)
+	_aim_at(_target.global_position + Vector3.UP * aim_height)
 	_apply_roll(delta)
+
+
+## Aims the camera at `aim` without ever producing a degenerate basis.
+##
+## `look_at(target, up)` needs `(aim - position)` to NOT be parallel to `up`.
+## When the camera stacks vertically on the target — which is exactly what a zero
+## follow offset produces, since the camera then shares the player's X/Z — the
+## direction is parallel to Vector3.UP and Godot cannot build an orthonormal
+## basis from it. It warns every frame ("Target and up vectors are colinear…
+## unwanted rotation around local Z axis") and hands back a basis that rolls
+## unpredictably: a game that looks broken while running perfectly otherwise.
+##
+## The guard keeps a minimum horizontal separation, so the aim direction always
+## has a real component perpendicular to up.
+func _aim_at(aim: Vector3) -> void:
+	if _camera == null:
+		return
+	var direction: Vector3 = aim - _camera.global_position
+	var horizontal: Vector3 = _flatten(direction)
+	if horizontal.length() < COLUMNAR_EPSILON:
+		# Nudge the aim sideways along the camera's own right vector rather than
+		# skipping the call: the frame keeps tracking, just without a broken base.
+		var right: Vector3 = _camera.global_transform.basis.x
+		horizontal = _flatten(right)
+		if horizontal.length() < COLUMNAR_EPSILON:
+			horizontal = Vector3.RIGHT
+		aim += horizontal.normalized() * COLUMNAR_EPSILON * 2.0
+	_camera.look_at(aim, Vector3.UP)
 
 
 ## Spring follow: smoothed position + velocity look-ahead.
