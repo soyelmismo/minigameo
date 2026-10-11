@@ -185,6 +185,10 @@ func _connect_event_bus() -> void:
 	# voice_requested(event_id) -> VoiceDirector (§6.1 canonical signal).
 	if bus.has_signal("voice_requested") and voice_director != null:
 		bus.connect("voice_requested", Callable(voice_director, "speak"))
+	# Match events -> announcer lines. The mapping lives in VoiceDirector,
+	# next to its cooldown/priority policy (§6.10, §5).
+	if voice_director != null and voice_director.has_method("connect_match_events"):
+		voice_director.connect_match_events()
 
 ## Duck-typed service locator lookup; returns null when absent.
 func _resolve_services() -> Object:

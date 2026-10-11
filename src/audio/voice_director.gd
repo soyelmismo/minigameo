@@ -16,6 +16,12 @@ extends Node
 
 ## Default anti-spam cooldown per event (seconds).
 const DEFAULT_COOLDOWN_S: float = 3.0
+## Where the generated announcer lines live (tools/audio/build_voice.py).
+const VO_ASSET_DIR := "res://assets/audio/voice/"
+## Combo milestone that earns an announcer line (not every step: spam).
+const COMBO_MILESTONE: int = 5
+## Remaining match time that triggers the time warning (seconds).
+const TIME_WARNING_S: float = 30.0
 ## Default music duck while speaking (dB + fade, seconds).
 const DEFAULT_DUCK_DB: float = -10.0
 const DEFAULT_DUCK_FADE_S: float = 0.15
@@ -56,12 +62,86 @@ var _last_spoken: Dictionary = {}          # event id -> clock msec
 var _queue: Array[Dictionary] = []         # pending {event, line, priority}
 var _voice_player: AudioStreamPlayer = null
 var _rng: RandomNumberGenerator = null
+var _match_events_connected: bool = false
 
 ## --- Setup ---
 
 func setup(catalog: VoiceLines, rng: RandomNumberGenerator = null) -> void:
 	_catalog = catalog
 	_rng = rng if rng != null else RandomNumberGenerator.new()
+
+
+## Subscribes to the match events the announcer owns (scaffold §6.10, §5).
+## Audio listens to the bus like every other system (§1.1): no direct
+## autoload references, and the mapping event -> VO line lives here, where the
+## cooldown and priority policy lives. Idempotent, and safe to call before or
+## after the catalog is set up.
+func connect_match_events() -> void:
+	if _match_events_connected:
+		return
+	EventBus.match_started.connect(_on_match_started)
+	EventBus.powerup_collected.connect(_on_powerup_collected)
+	EventBus.roulette_started.connect(_on_roulette_started)
+	EventBus.minigame_started.connect(_on_minigame_started)
+	EventBus.combo_changed.connect(_on_combo_changed)
+	EventBus.match_tick.connect(_on_match_tick)
+	EventBus.minigame_finished.connect(_on_minigame_finished)
+	_match_events_connected = true
+
+
+## Drops the subscriptions (teardown hygiene, §1.4).
+func disconnect_match_events() -> void:
+	if not _match_events_connected:
+		return
+	# get_connections() returns [{signal, callable, flags}, ...]: disconnect by
+	# the stored callable, or the connection stays alive behind us.
+	for sig: Signal in [
+		EventBus.match_started, EventBus.powerup_collected,
+		EventBus.roulette_started, EventBus.minigame_started,
+		EventBus.combo_changed, EventBus.match_tick,
+		EventBus.minigame_finished,
+	]:
+		for connection: Dictionary in sig.get_connections():
+			sig.disconnect(connection["callable"] as Callable)
+	_match_events_connected = false
+
+
+# --- EventBus handlers (event id -> VO request) ---
+
+func _on_match_started() -> void:
+	speak(VoiceLines.EV_MATCH_START)
+
+
+func _on_powerup_collected(_minigame_id: StringName) -> void:
+	speak(VoiceLines.EV_POWERUP_COLLECTED)
+
+
+func _on_roulette_started() -> void:
+	speak(VoiceLines.EV_ROULETTE_SPIN)
+
+
+func _on_minigame_started(_id: StringName) -> void:
+	speak(VoiceLines.EV_MINIGAME_START)
+
+
+func _on_combo_changed(combo: int) -> void:
+	# Only the milestone matters: a VO line per step would be spam.
+	if combo >= COMBO_MILESTONE:
+		speak(VoiceLines.EV_COMBO_HIGH)
+
+
+func _on_match_tick(time_left: float) -> void:
+	if time_left > 0.0 and time_left <= TIME_WARNING_S:
+		speak(VoiceLines.EV_TIME_WARNING)
+
+
+func _on_minigame_finished(result: MinigameResult) -> void:
+	if result == null:
+		return
+	speak(
+		VoiceLines.EV_MINIGAME_FLAWLESS if result.success
+		else VoiceLines.EV_MINIGAME_FAIL
+	)
 
 func set_time_source(source: Object) -> void:
 	_time_source = source
@@ -156,11 +236,17 @@ func _spawn_voice_player(event_id: StringName) -> void:
 		_on_line_finished()
 
 func _resolve_vo_stream(event_id: StringName) -> AudioStream:
-	# No VO audio assets exist yet. Everything resolves to null on purpose:
-	# the director stays fully functional (cooldown, queue, ducking) and the
-	# playback layer degrades silently. Swap for catalog paths when assets land.
-	push_warning("VoiceDirector: no VO audio asset for '%s' yet; line skipped (silent fallback)." % event_id)
-	return null
+	# One rendered line per event: the catalog may hold several variations, but
+	# the build renders the first one deterministically (tools/audio). A missing
+	# file degrades to the silent fallback instead of failing the match.
+	var path := VO_ASSET_DIR + "vo_" + String(event_id).trim_prefix("EV_").to_lower() + ".wav"
+	if not ResourceLoader.exists(path):
+		push_warning("VoiceDirector: no VO audio asset at %s; silent fallback." % path)
+		return null
+	var stream := load(path) as AudioStream
+	if stream == null:
+		push_warning("VoiceDirector: could not load %s; silent fallback." % path)
+	return stream
 
 func _on_line_finished() -> void:
 	if _voice_player != null and is_instance_valid(_voice_player):
