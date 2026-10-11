@@ -24,6 +24,25 @@
 8. Keep the project importable at all times: after your work,
    `godot --headless --import` must show no NEW errors.
 
+## Orchestration status
+
+- WAVE 1 (Fase 0/1 foundations) — DISPATCHED, running in parallel:
+  - sa-0-8d910544 — Core + Match + Score
+  - sa-0-04f958a1 — Styles + Juice
+  - sa-0-a871eeb3 — Player + World
+  - sa-0-8379a738 — Audio
+  - sa-0-3e605111 — PowerUps + Minigames framework
+- WAVE 2 (pending wave 1 notes): UI/HUD agent, minigame catalog content agent
+  (36 .tres), art agent (Blender props), integration agent (wire everything into
+  main.tscn + register autoloads + full-suite GUT).
+- After wave 2: orchestrator review pass (verify all gates, fix integration
+  issues), final report to user.
+
+## Git
+
+- Repo initialized by orchestrator; commit 1 = toolchain + bootstrap + docs.
+- Agents do NOT need to commit; orchestrator commits checkpoints between waves.
+
 ## Shared conventions (every agent MUST follow)
 
 - GDScript, static typing mandatory. Tabs for indent. snake_case vars/funcs,
