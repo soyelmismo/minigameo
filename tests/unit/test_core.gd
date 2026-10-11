@@ -112,6 +112,23 @@ func test_rng_weighted_pick_is_deterministic() -> void:
 	rng.seed(31337)
 	var second: StringName = rng.pick_weighted(items, weights)
 	assert_eq(first, second, "weighted pick must be seed-reproducible")
+
+
+func test_rng_weighted_pick_favors_heavy_items() -> void:
+	# Statistical sanity: over many picks the heaviest item must dominate
+	# and every item must appear. (Rejection sampling, unbiased.)
+	var rng: Node = load("res://src/core/rng/seeded_rng.gd").new()
+	var items := [&"a", &"b", &"c"]
+	var weights: Array[float] = [1.0, 2.0, 7.0]
+	rng.seed(24680)
+	var counts := {&"a": 0, &"b": 0, &"c": 0}
+	var n := 3000
+	for _i in n:
+		var pick: StringName = rng.pick_weighted(items, weights)
+		counts[pick] = int(counts[pick]) + 1
+	assert_gt(int(counts[&"c"]), int(counts[&"b"]), "heaviest beats middle")
+	assert_gt(int(counts[&"b"]), int(counts[&"a"]), "middle beats lightest")
+	assert_gt(int(counts[&"a"]), 0, "lightest still appears (unbiased)")
 	rng.free()
 
 
