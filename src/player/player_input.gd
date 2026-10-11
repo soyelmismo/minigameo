@@ -6,6 +6,9 @@ extends Node
 ## owned) and translates them into a move vector + jump for the Player.
 ## WASD/arrows/left-stick move, Space/A jump, Shift sprint.
 
+## Keyboard bindings, plus the gamepad buttons that map to the same actions
+## (§8: playable with keyboard, mouse AND gamepad). The left stick is read as
+## raw axes in _read_move(), because a stick is a value, not a press.
 const ACTIONS := {
 	&"move_forward": [KEY_W, KEY_UP],
 	&"move_back": [KEY_S, KEY_DOWN],
@@ -14,6 +17,18 @@ const ACTIONS := {
 	&"jump": [KEY_SPACE],
 	&"sprint": [KEY_SHIFT],
 }
+
+const GAMEPAD_BUTTONS := {
+	&"move_forward": [JOY_BUTTON_DPAD_UP],
+	&"move_back": [JOY_BUTTON_DPAD_DOWN],
+	&"move_left": [JOY_BUTTON_DPAD_LEFT],
+	&"move_right": [JOY_BUTTON_DPAD_RIGHT],
+	&"jump": [JOY_BUTTON_A],
+	&"sprint": [JOY_BUTTON_LEFT_SHOULDER],
+}
+
+## Dead zone for the analogue stick: below it a worn stick drifts the player.
+const STICK_DEADZONE := 0.2
 
 var player: Player = null
 var _move: Vector2 = Vector2.ZERO
@@ -32,6 +47,10 @@ func _ensure_actions() -> void:
 			var ev := InputEventKey.new()
 			ev.physical_keycode = key as Key
 			InputMap.action_add_event(String(action), ev)
+		for button: int in GAMEPAD_BUTTONS.get(action, []):
+			var pad := InputEventJoypadButton.new()
+			pad.button_index = button as JoyButton
+			InputMap.action_add_event(String(action), pad)
 
 
 func _find_player() -> void:
@@ -64,7 +83,18 @@ func _read_move() -> Vector2:
 	v.y += 1.0 if Input.is_action_pressed("move_back") else 0.0
 	v.x -= 1.0 if Input.is_action_pressed("move_left") else 0.0
 	v.x += 1.0 if Input.is_action_pressed("move_right") else 0.0
-	# Gamepad left stick (axes 0/1).
-	v.x += Input.get_axis(&"ui_left", &"ui_right")
-	v.y += Input.get_axis(&"ui_up", &"ui_down")
+	# Gamepad left stick: read as a raw axis (analogue value, not a press),
+	# with a dead zone so a drifting stick does not walk the player away.
+	for device: int in Input.get_connected_joypads():
+		v.x += _axis_with_deadzone(device, JOY_AXIS_LEFT_X)
+		v.y += _axis_with_deadzone(device, JOY_AXIS_LEFT_Y)
 	return v.limit_length(1.0)
+
+
+## Applies the dead zone and rescales the remaining range back to 0..1, so a
+## stick pushed just past the zone does not crawl.
+func _axis_with_deadzone(device: int, axis: JoyAxis) -> float:
+	var raw: float = Input.get_joy_axis(device, axis)
+	if absf(raw) <= STICK_DEADZONE:
+		return 0.0
+	return signf(raw) * (absf(raw) - STICK_DEADZONE) / (1.0 - STICK_DEADZONE)
