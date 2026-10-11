@@ -24,6 +24,43 @@
 8. Keep the project importable at all times: after your work,
    `godot --headless --import` must show no NEW errors.
 
+## Integration contract (for the WAVE 2 integration agent + orchestrator)
+
+When all wave-1 notes have landed, the orchestrator registers autoloads in
+project.godot in this canonical order (alphabetical within the block; the
+`[autoload]` section must contain NO comments):
+
+```
+EventBus="*res://src/core/event_bus.gd"
+GameServices="*res://src/core/game_services.gd"
+SeededRNG="*res://src/core/rng/seeded_rng.gd"
+ObjectPool="*res://src/core/pooling/object_pool.gd"
+MatchManager="*res://src/match/match_manager.gd"
+ScoreDirector="*res://src/match/score/score_director.gd"
+StyleDirector="*res://src/styles/style_director.gd"
+ImpactDirector="*res://src/juice/impact_director.gd"
+CameraDirector="*res://src/juice/camera_director.gd"
+PostFXDirector="*res://src/juice/postfx_director.gd"
+AudioDirector="*res://src/audio/audio_director.gd"
+MusicDirector="*res://src/audio/music_director.gd"
+VoiceDirector="*res://src/audio/voice_director.gd"
+SFXPlayer="*res://src/audio/sfx_player.gd"
+PowerUpDirector="*res://src/powerups/powerup_director.gd"
+RouletteController="*res://src/powerups/roulette/roulette_controller.gd"
+MinigameDirector="*res://src/minigames/minigame_director.gd"
+SaveSystem="*res://src/systems/save_system.gd"
+SettingsManager="*res://src/systems/settings.gd"
+```
+
+Rules for the integration pass:
+1. Verify every referenced path EXISTS before registering (godot --headless
+   --quit fails hard on missing autoloads).
+2. After registering: godot --headless --quit must be clean.
+3. main.tscn wires: World (city_block instance), player instance, UI HUD,
+   camera rig (CameraDirector creates its own Camera3D if scene has none).
+4. Full GUT suite must pass: godot --headless -s addons/gut/gut_cmdln.gd -gexit
+   (whole tests/ directory).
+
 ## Orchestration status
 
 - WAVE 1 (Fase 0/1 foundations) — DISPATCHED, running in parallel:
