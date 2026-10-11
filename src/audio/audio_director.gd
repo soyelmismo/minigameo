@@ -345,14 +345,11 @@ func stop_ambience() -> void:
 ## --- Service registration (duck-typed; GameServices is optional) ---
 
 func _register_service() -> void:
-	# Canonical locator name (GameServices.AUDIO) plus the autoload-style alias:
-	# some consumers resolve by path (minigame_director) and some by name.
-	# publish() refuses anything that is not the live singleton, so a test double
-	# built from this script cannot clobber the real service.
+	# One name, one way in: &"audio". publish() refuses anything that is not the
+	# live singleton, so a test double built from this script cannot clobber the
+	# real service. (A second autoload-style alias used to be registered here;
+	# nothing ever resolved it, which made it a dead registration.)
 	GameServices.publish("AudioDirector", &"audio", self)
-	var services: Object = GameServices.lookup(&"core")
-	if services != null and services.has_method("register"):
-		services.call("register", &"AudioDirector", self)
 
 func _connect_event_bus() -> void:
 	var bus: Object = _resolve_event_bus()

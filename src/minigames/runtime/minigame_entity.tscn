@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://cq4mg3nt1ty"]
+
+[ext_resource type="Script" path="res://src/minigames/runtime/minigame_entity.gd" id="1_entity"]
+
+[node name="BlockRoot Wilson" type="Area3D"]
+script = ExtResource("1_entity")
+collision_layer = 2
+collision_mask = 2
+monitoring = true
+monitorable = true

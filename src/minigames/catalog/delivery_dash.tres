@@ -1,13 +1,14 @@
-[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="MinigameMetadata" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/minigames/minigame_metadata.gd" id="meta_gd"]
 [ext_resource type="Script" path="res://src/minigames/slots/spawn_recipe.gd" id="spawn_gd"]
 [ext_resource type="Script" path="res://src/minigames/slots/objective_recipe.gd" id="obj_gd"]
 [ext_resource type="Script" path="res://src/minigames/slots/hud_recipe.gd" id="hud_gd"]
+[ext_resource type="PackedScene" path="res://src/minigames/runtime/minigame_entity.tscn" id="1_entity"]
 
 [sub_resource type="Resource" id="spawn"]
 script = ExtResource("spawn_gd")
-entity_scene = null
+entity_scene = ExtResource("1_entity")
 count = 1
 count_scales_with_difficulty = false
 spawn_radius = 30
@@ -55,3 +56,6 @@ objective_recipe = SubResource("objective")
 hud_recipe = SubResource("hud")
 difficulty_curve = null
 tags = PackedStringArray("chase", "life", "delivery")
+entity_size = 0.8
+entity_tint = Color(1.0, 0.6, 0.2, 1)
+entity_shape = &"BOX"

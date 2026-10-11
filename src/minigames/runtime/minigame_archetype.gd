@@ -191,9 +191,46 @@ func spawn_entity(at: Vector3) -> Node:
 		(node as Node3D).position = at
 	elif node is Node2D:
 		(node as Node2D).position = Vector2(at.x, at.y)
+	# Slot data drives the look, so a `.tres` decides how its entity reads
+	# (AGENTS.md §1.8: variety lives in the slots, never in per-microgame code).
+	_configure_entity(node, recipe)
 	ctx.world_root.add_child(node)
 	_spawned.append(node)
 	return node
+
+
+## Pushes the SpawnRecipe presentation fields onto a spawned entity.
+## Duck-typed on purpose: any scene with these fields works, and a scene that
+## does not want configuring is simply left alone.
+func _configure_entity(node: Node, recipe: SpawnRecipe) -> void:
+	if node == null:
+		return
+	# Slot field -> entity field. Each push is guarded so a scene that does not
+	# expose a field is left alone rather than raising.
+	_set_export(node, "tint", recipe.entity_tint)
+	_set_export(node, "size", recipe.entity_size)
+	_set_export(node, "shape", _shape_id(recipe.entity_shape))
+	_set_export(node, "lifetime_s", recipe.lifetime_s)
+
+
+## Maps a SpawnRecipe shape name onto the entity's Shape enum id, so the `.tres`
+## stays readable ("SPHERE"/"BOX"/"DIAMOND"/"RING") instead of an int.
+func _shape_id(shape: StringName) -> int:
+	match String(shape):
+		"BOX":
+			return 1
+		"DIAMOND":
+			return 2
+		"RING":
+			return 3
+		_:
+			return 0  # SPHERE
+
+
+## Sets a field only when the node actually exposes it (duck-typed, §1.1).
+func _set_export(node: Node, field: StringName, value: Variant) -> void:
+	if node.get(field) != null:
+		node.set(field, value)
 
 
 ## Libera todos los nodos creados por este micro-juego. Idempotente.

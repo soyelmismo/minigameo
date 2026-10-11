@@ -40,6 +40,31 @@ func _ready() -> void:
 	GameServices.publish("MinigameDirector", &"minigames", self)
 	_ensure_registry()
 	_registry.scan()
+	_connect_bus()
+
+
+## The director must sweep a running micro-game when the match ends.
+##
+## Without this, a micro-game launched in the last seconds of a match keeps
+## running after the clock is up: nothing calls abort() because the only
+## abort trigger is `_check_match_timeout()`, which needs the GameLoop to keep
+## ticking `update()` — and the loop stops at match end. The minigame node and
+## every entity it spawned then stay in the tree, which is a §1.4 cleanliness
+## violation and a node leak in every single match.
+func _connect_bus() -> void:
+	# EventBus is a sibling autoload; AGENTS.md §1.1 forbids referencing it by
+	# class name, so it is resolved through the tree like any other node.
+	var event_bus: Object = get_tree().root.get_node_or_null("/root/EventBus") as Object
+	if event_bus == null or not event_bus.has_signal("match_time_up"):
+		return
+	if event_bus.is_connected("match_time_up", _on_match_time_up):
+		return
+	event_bus.match_time_up.connect(_on_match_time_up)
+
+
+func _on_match_time_up() -> void:
+	if is_active():
+		abort(&"MATCH_TIMEOUT")
 
 
 ## Resuelve el registry: autoload hermano, hijo del director, o nuevo.
@@ -218,10 +243,10 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 	ctx.match_manager = _resolve(SERVICE_MATCH)
 	ctx.score = _resolve(SERVICE_SCORE)
 	ctx.style = _resolve(SERVICE_STYLE)
-	ctx.impact = _resolve(&"ImpactDirector")
-	ctx.camera = _resolve(&"CameraDirector")
-	ctx.postfx = _resolve(&"PostFXDirector")
-	ctx.audio = _resolve(&"AudioDirector")
+	ctx.impact = _resolve(&"impact")
+	ctx.camera = _resolve(&"camera")
+	ctx.postfx = _resolve(&"postfx")
+	ctx.audio = _resolve(&"audio")
 	ctx.music = _resolve(SERVICE_MUSIC)
 	ctx.voice = _resolve(SERVICE_VOICE)
 	ctx.player = _resolve_player()
@@ -242,8 +267,21 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 
 
 ## Resuelve un sistema por nombre en el árbol raíz. Null si no existe.
-func _resolve(node_name: StringName) -> Object:
-	var node: Node = get_tree().root.get_node_or_null(String(node_name))
+## Resolves a system through the service registry (scaffold §6, AGENTS.md §1.1).
+##
+## This used to look the node up by raw `/root/<autoload_name>` path, which is
+## the direct autoload reference §1.1 forbids — and, worse, it meant the
+## canonical service names never matched: the context was built with `_resolve(
+## &"audio")` returning the AudioDirector node only by accident of naming.
+## Now the registry is asked first, exactly like every other consumer.
+func _resolve(service_name: StringName) -> Object:
+	var services: Object = get_tree().root.get_node_or_null("/root/GameServices") as Object
+	if services != null and services.has_method("resolve"):
+		var found: Object = services.resolve(service_name)
+		if found != null:
+			return found
+	# Fallback for a service that never self-registers: resolve by autoload path.
+	var node: Node = get_tree().root.get_node_or_null(String(service_name))
 	return node as Object
 
 

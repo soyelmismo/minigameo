@@ -15,6 +15,13 @@ extends Resource
 @export var lifetime_s: float = -1.0          # -1 = hasta recogerse/impactar
 @export var respawn: bool = false             # reaparición tras recogerse
 @export var pool_group: StringName = &"mg_entity"
+## Presentation of a spawned entity (§1.3 data, not code): the ONE generic
+## `minigame_entity.tscn` reads these so a `.tres` decides how its pickup looks
+## without a second scene or a per-microgame script (AGENTS.md §1.8).
+@export var entity_size: float = 0.6
+@export var entity_tint: Color = Color(0.35, 0.85, 1.0)
+## Shape of the entity: SPHERE | BOX | DIAMOND | RING (MinigameEntity.Shape).
+@export var entity_shape: StringName = &"SPHERE"
 
 
 ## Recuento efectivo tras aplicar la curva de dificultad del contexto.
