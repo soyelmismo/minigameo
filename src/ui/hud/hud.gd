@@ -201,8 +201,20 @@ func set_powerup_markers(points: PackedVector2Array) -> void:
 
 ## Aplica el hud_theme del style pack (§13.2: la UI muta con el escenario).
 func apply_theme(theme: Theme) -> void:
-	if theme != null:
-		self.theme = theme
+	if theme == null:
+		return
+	# CanvasLayer no tiene `theme`: se aplica al Root (Control).
+	%Root.theme = theme
+
+
+## Theme activo del HUD (para tests).
+func active_theme() -> Theme:
+	return %Root.theme
+
+
+## True cuando el contador animado ha llegado al objetivo (para tests).
+func score_counter_settled() -> bool:
+	return int(_score_displayed) >= _score_target
 
 
 # --- Lecturas para tests / integración ---
@@ -269,8 +281,8 @@ func _apply_widget_config(widget: Control, recipe: HUDRecipe) -> void:
 
 ## Target leído del ObjectiveRecipe si está presente (duck-typed).
 func _target_of(recipe: HUDRecipe) -> int:
-	var meta: Object = recipe.get_meta("objective_target") if recipe.has_meta("objective_target") else null
-	if meta != null:
+	if recipe.has_meta("objective_target"):
+		var meta: Variant = recipe.get_meta("objective_target")
 		return int(meta)
 	return 0
 
@@ -302,13 +314,13 @@ func _apply_hud_theme_for_style(_pack_id: StringName) -> void:
 
 
 ## Busca un sistema duck-typed en /root (GameServices primero).
-func _find(name: StringName) -> Object:
+func _find(system_name: StringName) -> Object:
 	var root := get_tree().root if is_inside_tree() else null
 	if root == null:
 		return null
 	var services := root.get_node_or_null("/root/GameServices")
 	if services != null and services.has_method("get"):
-		var svc: Object = services.get(name)
+		var svc: Object = services.get(system_name)
 		if svc != null:
 			return svc
-	return root.get_node_or_null("/root/" + String(name))
+	return root.get_node_or_null("/root/" + String(system_name))

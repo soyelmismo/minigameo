@@ -48,10 +48,12 @@ func _process(delta: float) -> void:
 
 ## Configura el widget desde el slot (icon + color semántico).
 func configure(icon: Texture2D, color: Color) -> void:
-	if icon != null:
-		_icon.texture = icon
-	_icon.modulate = color
-	_apply_outline(color)
+	if _icon != null:
+		if icon != null:
+			_icon.texture = icon
+		_icon.modulate = color
+	if _panel != null:
+		_apply_outline(color)
 
 
 ## Ajusta la zona válida (del ObjectiveRecipe.tolerance, normalizada).
@@ -59,11 +61,6 @@ func set_zone(center: float, half_width: float) -> void:
 	zone_center = clampf(center, 0.0, 1.0)
 	zone_half_width = clampf(half_width, 0.0, 0.5)
 	_layout_zone()
-
-
-## True si la posición actual del marcador está dentro de la zona.
-func in_zone() -> bool:
-	return _in_zone(_position)
 
 
 ## Posición actual del marcador (0..1, para tests).

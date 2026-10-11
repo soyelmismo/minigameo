@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="GameConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/core/config/game_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+match_length_s = 300.0
+countdown_s = 3.0
+roulette_spin_s = 2.5
+minigame_cooldown_s = 1.5
+powerups_max_active = 6
+powerup_respawn_s = 4.0
+combo_timeout_s = 6.0
+combo_step = 0.25
+combo_max = 9.9
+time_bonus_per_s = 100
+music_bpm = 128.0
+sfx_max_voices = 32
+voice_cooldown_s = 3.0
+rank_c = 5000
+rank_b = 12000
+rank_a = 25000
+rank_s = 45000
+rank_s_plus = 70000

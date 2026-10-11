@@ -28,10 +28,12 @@ func _ready() -> void:
 
 ## Configura el widget desde el slot (icon + color semántico).
 func configure(icon: Texture2D, color: Color) -> void:
-	if icon != null:
-		_icon.texture = icon
-	_icon.modulate = color
-	_apply_outline(color)
+	if _icon != null:
+		if icon != null:
+			_icon.texture = icon
+		_icon.modulate = color
+	if _panel != null:
+		_apply_outline(color)
 
 
 ## Define el número de pasos de la secuencia.

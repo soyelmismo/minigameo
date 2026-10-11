@@ -22,10 +22,10 @@ func _ready() -> void:
 
 
 ## Establece el multiplicador. Subir dispara el scale-punch (§13.2).
-func set_value(value: float) -> void:
-	var rose: bool = value > _value
-	_value = value
-	_value_label.text = "x%.1f" % value
+func set_value(new_value: float) -> void:
+	var rose: bool = new_value > _value
+	_value = new_value
+	_value_label.text = "x%.1f" % new_value
 	if rose:
 		_punch()
 

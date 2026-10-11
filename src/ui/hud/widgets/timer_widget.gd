@@ -40,10 +40,12 @@ func _process(delta: float) -> void:
 
 ## Configura el widget desde el slot (icon + color semántico).
 func configure(icon: Texture2D, color: Color) -> void:
-	if icon != null:
-		_icon.texture = icon
-	_icon.modulate = color
-	_apply_outline(color)
+	if _icon != null:
+		if icon != null:
+			_icon.texture = icon
+		_icon.modulate = color
+	if _panel != null:
+		_apply_outline(color)
 
 
 ## Arranca la cuenta atrás desde `seconds`.

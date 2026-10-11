@@ -52,6 +52,16 @@ func rank_text() -> String:
 	return _rank_label.text
 
 
+## True si se muestra el aviso de nuevo récord (para tests).
+func new_record_visible() -> bool:
+	return _new_record.visible
+
+
+## Línea de humor del rank (para tests).
+func flavor_text() -> String:
+	return _flavor_label.text
+
+
 func _apply_rank_color(rank: StringName) -> void:
 	match rank:
 		&"S+", &"S":

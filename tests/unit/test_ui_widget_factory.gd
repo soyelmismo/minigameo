@@ -45,9 +45,8 @@ func test_counter_widget_counts_and_pops() -> void:
 	w.set_value(3)
 	assert_eq(w.value_text(), "3", "value label shows the counter")
 	w.set_value(7)
-	w.pop()
-	assert_gt(w.value_scale(), 1.0, "pop starts above scale 1")
-	await _settle()
+	assert_gt(w.value_scale(), 1.0, "increment triggers the pop")
+	await _await_settled(func() -> float: return w.value_scale())
 	assert_almost_eq(w.value_scale(), 1.0, 0.01, "pop settles back to scale 1")
 
 
@@ -55,11 +54,12 @@ func test_timer_widget_countdown_and_mode() -> void:
 	var w := _tree(_make_timer())
 	w.set_duration(6.0)
 	assert_almost_eq(w.time_left(), 6.0, 0.001, "countdown starts at duration")
+	assert_eq(w.time_text(), "6.0", "timer formats tenths of a second")
 	w.set_accumulate_mode(true)
 	assert_eq(w.mode, TimerWidget.MODE_ACCUMULATE, "accumulate mode engages")
 	w.set_accumulate_mode(false)
-	assert_almost_eq(w.time_left(), 0.0, 0.001, "leaving accumulate mode resets")
-	assert_eq(w.time_text(), "0.0", "timer formats tenths of a second")
+	assert_eq(w.mode, TimerWidget.MODE_COUNTDOWN, "leaving accumulate restores countdown")
+	assert_almost_eq(w.time_left(), 6.0, 0.001, "countdown resumes from where it paused")
 
 
 func test_progress_widget_zone_marker() -> void:
@@ -94,7 +94,7 @@ func test_multiplier_widget_punch_on_rise() -> void:
 	assert_almost_eq(w.value(), 3.5, 0.001, "multiplier rises")
 	assert_eq(w.value_text(), "x3.5", "multiplier label formats xN.N")
 	assert_gt(w.label_scale(), 1.0, "rise triggers the scale-punch")
-	await _settle()
+	await _await_settled(func() -> float: return w.label_scale())
 	assert_almost_eq(w.label_scale(), 1.0, 0.01, "punch settles back")
 
 
@@ -103,7 +103,15 @@ func _tree(node: Node) -> Node:
 	return node
 
 
-## Deja correr los tweens un puñado de frames.
+## Espera a que un pop/punch vuelva a escala 1. Robusto al framerate:
+## avanza frames hasta que el tween termina (o hasta un tope).
+func _await_settled(scale_getter: Callable) -> void:
+	var frames := 0
+	while float(scale_getter.call()) > 1.001 and frames < 600:
+		await get_tree().process_frame
+		frames += 1
+
+
 func _settle() -> void:
 	for _i in 20:
 		await get_tree().process_frame

@@ -18,7 +18,7 @@ const _PALETTES := {
 	&"CANDY_PLASTIC": [Color(1.0, 0.6, 0.8), Color(0.6, 0.9, 1.0)],
 	&"KAIJU_SOFVI": [Color(0.95, 0.35, 0.3), Color(0.3, 0.7, 0.4)],
 	&"SPRITE_25D": [Color(0.55, 0.35, 1.0), Color(1.0, 0.85, 0.3)],
-	&PAPER_CRAFT: [Color(0.85, 0.7, 0.5), Color(0.6, 0.5, 0.4)],
+	&"PAPER_CRAFT": [Color(0.85, 0.7, 0.5), Color(0.6, 0.5, 0.4)],
 	&"GOLD_RUSH": [Color(1.0, 0.85, 0.3), Color(0.25, 0.2, 0.1)],
 	&"WATERCOLOR": [Color(0.5, 0.65, 0.9), Color(0.95, 0.8, 0.7)],
 }

@@ -29,6 +29,16 @@ func _load_best() -> int:
 	return 0
 
 
+## Línea del récord (para tests).
+func best_text() -> String:
+	return _best_label.text
+
+
+## Texto del logo (para tests).
+func title_text() -> String:
+	return %TitleLabel.text
+
+
 func _find(name: StringName) -> Object:
 	var root := get_tree().root
 	var services := root.get_node_or_null("/root/GameServices")

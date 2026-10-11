@@ -133,8 +133,6 @@ static func plus() -> ImageTexture:
 
 
 static func bell() -> ImageTexture:
-	var body := _ngon(Vector2(32.0, 38.0), 0.0, 3, 0.0) # placeholder no usado
-	_ = body
 	return _build(
 		func(p: Vector2) -> bool:
 			var trapezoid := _point_in_poly(
