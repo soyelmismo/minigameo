@@ -23,7 +23,6 @@ const MOTION_FALL := &"FALL"
 
 var _duration: float = 20.0
 var _elapsed: float = 0.0
-var _running: bool = false
 var _finished: bool = false
 var _combo_max: int = 0
 

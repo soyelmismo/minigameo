@@ -24,19 +24,34 @@ signal event(kind: StringName, payload: Dictionary)
 
 var _ctx: MinigameContext = null
 var _meta: MinigameMetadata = null
+## True while start() has run and teardown() has not. Owned by the contract
+## base so every archetype reads one flag (MinigameArchetype includes).
+var _running: bool = false
 
 
 # --- Ciclo de vida (obligatorio respetar el orden) ---
 
-## Inyección. Sin gameplay todavía. Leer del contexto.
+## Injection. No gameplay yet: read from the context.
+## Archetypes extend MinigameArchetype, which overrides setup() and calls
+## super.setup() on its way down, so this function runs on every micro-game.
+## It therefore does its real job — store the injected context — and must not
+## warn: a warning here would fire on every single micro-game of the match.
 func setup(ctx: MinigameContext) -> void:
 	_ctx = ctx
-	push_warning("%s: setup() no implementado" % get_script().resource_path)
+	if ctx != null:
+		_meta = ctx.metadata
 
 
-## Comienza el micro-juego: arrancar timers, spawnear entidades, pedir música.
+## Starts the micro-game: begin timers, spawn entities, request music.
+## MinigameArchetype.start() implements the shared machinery and every
+## archetype inherits it, so the contract base is not abstract here either.
 func start() -> void:
-	push_error("%s: start() no implementado" % get_script().resource_path)
+	_running = true
+
+
+## True while the micro-game is running (archetypes and the director read it).
+func is_running() -> bool:
+	return _running
 
 
 ## Frame lógico. El director llama a update(); NO usar _process directo.
@@ -59,8 +74,7 @@ func teardown() -> void:
 # --- Metadata ---
 
 func get_metadata() -> MinigameMetadata:
-	push_error("%s: get_metadata() no implementado" % get_script().resource_path)
-	return null
+	return _meta
 
 
 # --- Acceso de solo lectura al contexto (para arquetipos) ---
