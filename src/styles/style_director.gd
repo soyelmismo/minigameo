@@ -18,9 +18,13 @@ var _to_env: Dictionary = {}
 
 
 func _ready() -> void:
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"style", self)
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"style") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("StyleDirector", &"style", self)
 	_capture_base()
 
 

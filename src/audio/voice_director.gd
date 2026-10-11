@@ -66,6 +66,17 @@ var _match_events_connected: bool = false
 
 ## --- Setup ---
 
+func _ready() -> void:
+	# Self-register under its canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via GameServices.lookup(&"voice")
+	# instead of referencing the autoload by path.
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"voice") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("VoiceDirector", &"voice", self)
+
 func setup(catalog: VoiceLines, rng: RandomNumberGenerator = null) -> void:
 	_catalog = catalog
 	_rng = rng if rng != null else RandomNumberGenerator.new()

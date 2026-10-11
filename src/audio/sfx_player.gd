@@ -8,7 +8,8 @@ extends Node
 ## - Randomization per take: pitch ±5%, volume ±1.5 dB (scaled by the
 ##   catalog entry, data-driven).
 ## - Per-group and per-id concurrency caps from the catalog.
-## - Null/missing streams: log once + skip (no audio assets exist yet).
+## - Null/missing streams: log once + skip (the build ships every asset; a
+##   missing file degrades to a logged no-op instead of a crash).
 ##
 ## Cross-system isolation (AGENTS.md §1.1): nothing references other
 ## autoloads; the MusicDirector is asked to duck via the injected reference
@@ -23,6 +24,29 @@ const MAX_VOICES_HARD_LIMIT: int = 64
 const DEFAULT_MAX_VOICES: int = 32
 const PITCH_RAND: float = 0.05        # ±5%
 const VOLUME_RAND_DB: float = 1.5     # ±1.5 dB
+
+## --- Impact audio (ImpactFrame.impact_sfx) ---
+##
+## An impact frame carries a bare AudioStream, not a catalog id, so it needs its
+## own routing. The authoritative values live in GameConfig.tres (§1.3, data
+## not code); these constants are only the fallback for when no config
+## resolves and _refresh_from_config() overwrites them as soon as one loads.
+const IMPACT_PRIORITY: int = 90
+const IMPACT_GROUP: StringName = &"impact"
+const IMPACT_VOLUME_DB: float = 0.0
+
+var impact_priority: int = IMPACT_PRIORITY:
+	set(value):
+		impact_priority = clampi(value, 0, MAX_VOICES_HARD_LIMIT)
+var impact_group: StringName = IMPACT_GROUP:
+	set(value):
+		impact_group = value
+var impact_bus: StringName = BusLayout.BUS_IMPACT:
+	set(value):
+		impact_bus = value
+var impact_volume_db: float = IMPACT_VOLUME_DB:
+	set(value):
+		impact_volume_db = value
 
 var library: SFXLibrary = null
 var max_voices: int = DEFAULT_MAX_VOICES:
@@ -42,6 +66,13 @@ var _group_caps: Dictionary = {}       # StringName -> int (data-driven)
 var _playing_count: int = 0
 
 func _ready() -> void:
+	# Self-register under its canonical service name (scaffold §6 / AGENTS
+	# §1.1): consumers resolve this system via GameServices.lookup(&"sfx").
+	# ONLY the autoload instance may publish: publish() refuses a test double
+	# or a second copy, which would otherwise overwrite the canonical entry
+	# with a reference that dies with the test and leave every consumer's
+	# resolve() handing back null for the rest of the run.
+	GameServices.publish("SFXPlayer", &"sfx", self)
 	_refresh_from_config()
 	_build_pool()
 
@@ -62,6 +93,32 @@ func _refresh_from_config() -> void:
 			from_config = loaded.sfx_max_voices
 	if from_config != null:
 		max_voices = int(from_config)
+	# Impact routing is data too (§1.3). Same explicit-wins guard semantics as
+	# max_voices: only a value that is still at its constant default is pulled
+	# from the file, so a test or a runtime tweak is never overwritten.
+	if impact_priority == IMPACT_PRIORITY:
+		impact_priority = maxi(1, int(_config_value(cfg, "impact_sfx_priority", IMPACT_PRIORITY)))
+	if impact_bus == BusLayout.BUS_IMPACT:
+		impact_bus = StringName(String(_config_value(cfg, "impact_sfx_bus", BusLayout.BUS_IMPACT)))
+	if impact_group == IMPACT_GROUP:
+		impact_group = StringName(String(_config_value(cfg, "impact_sfx_group", IMPACT_GROUP)))
+	if is_zero_approx(impact_volume_db):
+		impact_volume_db = float(_config_value(cfg, "impact_sfx_volume_db", IMPACT_VOLUME_DB))
+
+
+## Reads one field from the resolved GameConfig, falling back to the .tres on
+## disk and finally to the supplied default. Never throws.
+func _config_value(resolved: Object, field: StringName, default: Variant) -> Variant:
+	var candidates: Array[Object] = []
+	if resolved != null:
+		candidates.append(resolved)
+	var loaded := load("res://src/core/config/game_config.tres")
+	if loaded != null:
+		candidates.append(loaded)
+	for candidate: Object in candidates:
+		if candidate.get(field) != null:
+			return candidate.get(field)
+	return default
 
 ## --- Pool ---
 
@@ -70,7 +127,6 @@ func _build_pool() -> void:
 		return
 	for i in range(max_voices):
 		var player := AudioStreamPlayer.new()
-		player.name = "Voice_%d" % i
 		player.bus = BusLayout.BUS_SFX
 		add_child(player)
 		_voices.append(player)
@@ -83,6 +139,32 @@ func set_group_cap(group: StringName, cap: int) -> void:
 
 ## --- Public API ---
 
+## Plays an impact's own stream (ImpactFrame.impact_sfx is a bare AudioStream,
+## not a catalog id), still through the shared voice pool with the same
+## priority/stealing policy as play(). Returns the voice used, or null.
+##
+## This exists because ImpactDirector calls play_impact(); before it did, the
+## audio layer of every impact frame was silently dropped — the lookup for
+## &"sfx" resolved to null and the method did not exist either.
+func play_impact(stream: AudioStream, volume_db: float = 0.0) -> AudioStreamPlayer:
+	if stream == null:
+		return null
+	var voice: AudioStreamPlayer = _acquire_voice(impact_priority)
+	if voice == null:
+		return null
+	voice.stream = stream
+	voice.bus = impact_bus
+	voice.volume_db = impact_volume_db + volume_db
+	var idx: int = _voices.find(voice)
+	_voice_priority[idx] = impact_priority
+	_voice_start[idx] = float(Time.get_ticks_msec())
+	_group_counts[impact_group] = int(_group_counts.get(impact_group, 0)) + 1
+	_playing_count += 1
+	# Same release bookkeeping as play(): without the finished connection the
+	# impact group counters would leak and saturate the group cap.
+	voice.finished.connect(_on_voice_finished.bind(voice, &"", IMPACT_GROUP), Object.CONNECT_ONE_SHOT)
+	return voice
+
 ## Plays a cataloged SFX. Returns the voice used, or null when skipped
 ## (missing stream, cooldown, group cap). Never throws.
 func play(sfx_id: StringName, volume_db_offset: float = 0.0) -> AudioStreamPlayer:
@@ -94,6 +176,7 @@ func play(sfx_id: StringName, volume_db_offset: float = 0.0) -> AudioStreamPlaye
 		push_warning("SFXPlayer.play('%s'): unknown id, skipped." % sfx_id)
 		return null
 	# Cooldown gate (data-driven per id).
+
 	var cooldown_s: float = float(entry.get("cooldown_s", 0.0))
 	if cooldown_s > 0.0 and _on_cooldown(sfx_id, cooldown_s):
 		return null
@@ -142,6 +225,14 @@ func playing_voices() -> int:
 func stop_all() -> void:
 	for v: AudioStreamPlayer in _voices:
 		v.stop()
+	# Bookkeeping hygiene (§1.4): a stopped voice never emits finished(), so
+	# without this reset the group/id counters would stay armed forever and
+	# the next play of those ids would be silently capped.
+	_group_counts.clear()
+	_id_counts.clear()
+	_playing_count = 0
+	for i in range(_voice_priority.size()):
+		_release_voice(i)
 
 ## --- Voice acquisition with stealing ---
 

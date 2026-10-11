@@ -35,6 +35,27 @@ func _ready() -> void:
 	_services[CORE] = self
 
 
+## Publish an autoload singleton under its canonical service name.
+##
+## Only a node that actually IS the `/root/<autoload_name>` singleton may claim
+## the name. A test double or a second copy created inside a scene (dozens of
+## tests do `load(SCRIPT).new()`) also runs that script's `_ready()`, and
+## without this guard its self-registration would clobber the live service.
+## The clobber is invisible until the double is freed, when the
+## dangling-reference guard in resolve() drops the key and the real autoload
+## never re-registers — leaving shake, SFX, camera, audio and settings dead
+## for the rest of the run, usually with no error anywhere.
+func publish(autoload_name: String, service_name: StringName, instance: Object) -> void:
+	if instance == null or service_name.is_empty():
+		return
+	if not is_instance_valid(instance):
+		return
+	var singleton: Node = get_tree().root.get_node_or_null("/root/" + autoload_name)
+	if singleton != instance:
+		return  # not the live autoload: a stand-in must not claim the name
+	register(service_name, instance)
+
+
 ## Register a service under its canonical name. Later registrations win.
 func register(service_name: StringName, instance: Object) -> void:
 	if instance == null:

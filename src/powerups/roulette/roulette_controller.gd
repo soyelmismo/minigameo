@@ -30,6 +30,13 @@ signal spin_finished(id: StringName)
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"roulette") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("RouletteController", &"roulette", self)
 	_registry = get_node_or_null("MinigameRegistry") as MinigameRegistry
 	if _registry == null:
 		_registry = MinigameRegistry.new()

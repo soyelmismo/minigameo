@@ -18,11 +18,110 @@ extends RefCounted
 const DEFAULT_VOLUME_DB: float = 0.0
 const DEFAULT_PRIORITY: int = 0
 
+## Where the synthesized one-shots live (tools/audio/build_audio.py).
+const SFX_DIR := "res://assets/audio/sfx/"
+
+## THE CATALOG DATA: id -> entry. Every balance number a one-shot needs
+## lives here, not in the player (AGENTS.md §1.3). Fields mirror register():
+## path, group, priority, volume_db, pitch_rand, max_voices, cooldown_s.
+##
+## Groups route through BusLayout (§10.2): player -> Player, world -> World,
+## ui -> UI (clean, no reverb), impact -> Impact. Priority drives SFXPlayer's
+## voice stealing: the impact tiers outrank the UI, and CRITICAL outranks
+## everything short of the announcer (VO).
+const DEFAULT_CATALOG: Dictionary = {
+	&"sfx_pickup": {
+		"path": SFX_DIR + "sfx_pickup.wav", "group": &"player",
+		"priority": 40, "volume_db": -1.0, "cooldown_s": 0.05,
+	},
+	&"sfx_jump": {
+		"path": SFX_DIR + "sfx_jump.wav", "group": &"player",
+		"priority": 30, "volume_db": -3.0,
+	},
+	&"sfx_hit": {
+		"path": SFX_DIR + "sfx_hit.wav", "group": &"impact",
+		"priority": 50, "volume_db": -1.0, "cooldown_s": 0.06,
+	},
+	&"sfx_impact_light": {
+		"path": SFX_DIR + "sfx_impact_light.wav", "group": &"impact",
+		"priority": 40, "volume_db": -3.0, "cooldown_s": 0.05,
+	},
+	&"sfx_impact_medium": {
+		"path": SFX_DIR + "sfx_impact_medium.wav", "group": &"impact",
+		"priority": 50, "volume_db": -2.0, "cooldown_s": 0.05,
+	},
+	&"sfx_impact_heavy": {
+		"path": SFX_DIR + "sfx_impact_heavy.wav", "group": &"impact",
+		"priority": 65, "volume_db": -1.0, "cooldown_s": 0.08,
+	},
+	&"sfx_impact_critical": {
+		"path": SFX_DIR + "sfx_impact_critical.wav", "group": &"impact",
+		"priority": 80, "volume_db": 0.0, "cooldown_s": 0.10,
+	},
+	&"sfx_fail": {
+		"path": SFX_DIR + "sfx_fail.wav", "group": &"impact",
+		"priority": 60, "volume_db": -1.0, "cooldown_s": 0.30,
+	},
+	&"sfx_score": {
+		"path": SFX_DIR + "sfx_score.wav", "group": &"ui",
+		"priority": 35, "volume_db": -2.0, "cooldown_s": 0.07,
+	},
+	&"sfx_combo": {
+		"path": SFX_DIR + "sfx_combo.wav", "group": &"ui",
+		"priority": 30, "volume_db": -4.0, "cooldown_s": 0.05,
+	},
+	&"sfx_ui_click": {
+		"path": SFX_DIR + "sfx_ui_click.wav", "group": &"ui",
+		"priority": 45, "volume_db": -4.0, "cooldown_s": 0.04,
+	},
+	&"sfx_ui_hover": {
+		"path": SFX_DIR + "sfx_ui_hover.wav", "group": &"ui",
+		"priority": 20, "volume_db": -10.0, "cooldown_s": 0.08,
+	},
+	&"sfx_roulette": {
+		"path": SFX_DIR + "sfx_roulette.wav", "group": &"world",
+		"priority": 55, "volume_db": -2.0, "cooldown_s": 0.20,
+	},
+	&"sfx_countdown": {
+		"path": SFX_DIR + "sfx_countdown.wav", "group": &"ui",
+		"priority": 50, "volume_db": -2.0, "cooldown_s": 0.50,
+	},
+	&"sfx_countdown_go": {
+		"path": SFX_DIR + "sfx_countdown_go.wav", "group": &"ui",
+		"priority": 60, "volume_db": -1.0, "cooldown_s": 0.50,
+	},
+	&"sfx_powerup_spawn": {
+		"path": SFX_DIR + "sfx_powerup_spawn.wav", "group": &"world",
+		"priority": 35, "volume_db": -6.0, "cooldown_s": 0.10,
+	},
+}
+
+## Per-group concurrency caps (§10.2: "voice-limit per group"). Applied by
+## AudioDirector when it wires the player; data lives with the catalog.
+const DEFAULT_GROUP_CAPS: Dictionary = {
+	&"player": 3,
+	&"world": 4,
+	&"ui": 4,
+	&"impact": 4,
+}
+
 var _entries: Dictionary = {}     # StringName -> Dictionary
 var _cache: Dictionary = {}       # StringName -> Variant (AudioStream | null)
 var _warned_missing: Dictionary = {}  # StringName -> true (log once per id)
 
 ## --- Catalog population (data-driven) ---
+
+## Registers DEFAULT_CATALOG. An id that is already registered is never
+## overwritten: data supplied at runtime wins over the defaults. Returns
+## the number of ids actually added.
+func register_defaults() -> int:
+	var added: int = 0
+	for sfx_id: StringName in DEFAULT_CATALOG:
+		if _entries.has(sfx_id):
+			continue
+		register(sfx_id, (DEFAULT_CATALOG[sfx_id] as Dictionary).duplicate())
+		added += 1
+	return added
 
 func register(sfx_id: StringName, entry: Dictionary) -> void:
 	_entries[sfx_id] = entry
@@ -106,4 +205,4 @@ func _warn_once(sfx_id: StringName, reason: String) -> void:
 	if _warned_missing.has(sfx_id):
 		return
 	_warned_missing[sfx_id] = true
-	push_warning("SFXLibrary: '%s' skipped (%s). No audio assets exist yet." % [sfx_id, reason])
+	push_warning("SFXLibrary: '%s' skipped (%s)." % [sfx_id, reason])

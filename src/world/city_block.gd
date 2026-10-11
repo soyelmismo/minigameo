@@ -340,7 +340,7 @@ func _add_dusk_rim_light(parent: Node) -> void:
 	light.light_color = Color(1.0, 0.70, 0.42)
 	light.light_energy = 0.6
 	light.shadow_enabled = false
-	light.name = "RimLight"
+	light.name = "DuskRimLight"
 	parent.add_child(light)
 
 

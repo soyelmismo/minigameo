@@ -28,12 +28,16 @@ var _hitstop_deadline_msec: int = 0
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"impact") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("ImpactDirector", &"impact", self)
 	# The restore must survive a paused driver (pause menu, tests freezing the
 	# GameLoop); gameplay stays paused, only the juice clock self-completes.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"impact", self)
 
 
 func _notification(what: int) -> void:

@@ -33,12 +33,18 @@ var _last_tick_second: int = -1   # last whole second announced via match_tick
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"match") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("MatchManager", &"match", self)
 	config = load(CONFIG_PATH) as GameConfig
 	if config == null:
 		config = GameConfig.new()
 		push_warning("MatchManager: config .tres missing, using defaults")
 	_time_left = config.match_length_s
-	_register_self()
 	_connect_event_bus()
 	transition_to(State.TITLE)
 
@@ -58,18 +64,15 @@ func _on_roulette_result(id: StringName) -> void:
 	start_minigame(id)
 
 
+## Publishes the match system and the loaded GameConfig under their canonical
+## names. publish() refuses anything that is not the live autoload singleton,
+## so a test double built from this script cannot clobber the real service and
+## then leave &"match"/&"config" dangling when it is freed.
 func _register_self() -> void:
-	var locator := _find_locator()
-	if locator != null:
-		locator.register(&"match", self)
+	GameServices.publish("MatchManager", &"match", self)
+	var locator: Node = GameServices.lookup(&"core") as Node
+	if locator != null and locator.has_method("register") and config != null:
 		locator.register(&"config", config)
-
-
-func _find_locator() -> Node:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
-		return null
-	return tree.root.get_node_or_null(^"/root/GameServices")
 
 
 # --- Public API -------------------------------------------------------------

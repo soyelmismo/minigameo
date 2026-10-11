@@ -1,13 +1,39 @@
 extends Node
 ## CameraDirector — follow camera + shake + FOV punch (scaffold §6.6).
 ##
-## Follows the player (duck-typed via GameServices/EventBus) with spring
+## Follows the player (duck-typed via GameServices/EventBus) with a spring
 ## lag. Shake is trauma-based (decaying noise). Degrades gracefully with no
 ## player/camera present (headless tests drive the math directly).
+##
+## Premium follow feel (graphics brief "camera"):
+##   * frame-rate-independent exponential smoothing (critically damped),
+##     so the follow is identical at 30, 60 or 144 fps;
+##   * velocity look-ahead: the frame leads the player slightly, which reads
+##     as "fast" instead of "floaty";
+##   * speed-reactive FOV: the frame breathes open while sprinting;
+##   * a touch of roll from lateral motion.
+## Every constant is an exported tuning value, not a magic number (§1.3).
 
 const TRAUMA_DECAY := 1.6      # trauma lost per second
 const TRAUMA_MAX := 1.0
-const FOLLOW_LERP := 6.0       # spring stiffness
+const FOLLOW_LERP := 6.0       # legacy linear spring stiffness (unused path)
+
+## Follow smoothing rate (1/s): higher = tighter camera.
+@export var follow_stiffness: float = 9.0
+## Look-at height above the player's feet (metres).
+@export var aim_height: float = 1.15
+## Seconds of velocity look-ahead (0 = camera sits exactly on the player).
+@export var lookahead: float = 0.22
+## Maximum look-ahead distance (metres).
+@export var lookahead_max: float = 2.5
+## FOV degrees added per m/s of horizontal speed (0 = no speed reaction).
+@export var speed_fov_per_unit: float = 0.30
+## Cap on the speed-driven FOV addition (degrees).
+@export var speed_fov_max: float = 6.0
+## Degrees of roll per m/s of lateral speed (0 = no roll).
+@export var roll_per_unit: float = 0.02
+## Roll cap (degrees) so the frame never disorients.
+@export var roll_max: float = 1.2
 
 var _camera: Camera3D = null
 var _target: Node3D = null
@@ -20,9 +46,20 @@ var _fov_punch_left: float = 0.0
 var _zoom_amount: float = 0.0
 var _zoom_left: float = 0.0
 var _offset: Vector3 = Vector3.ZERO
+var _lookahead_vec: Vector3 = Vector3.ZERO
+var _speed: float = 0.0
+var _speed_fov: float = 0.0
+var _roll: float = 0.0
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"camera") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("CameraDirector", &"camera", self)
 	_find_camera()
 	_find_target()
 	GameServices.lookup(&"core")  # no-op guard for headless boot
@@ -58,7 +95,12 @@ func set_target(t: Node3D) -> void:
 	_target = t
 
 
-# --- Shake ------------------------------------------------------------------
+## Set a persistent follow offset (framing rigs, cinematic moments).
+func set_offset(off: Vector3) -> void:
+	_offset = off
+
+
+# --- Shake ----------
 
 ## Add trauma (0..1). Multiple calls accumulate and decay over time.
 func shake(trauma: float, freq: float = 24.0, duration: float = 0.4) -> void:
@@ -96,7 +138,7 @@ func shake_offset(delta: float) -> Vector3:
 	return Vector3(sin(t * 1.7), sin(t * 2.3 + 1.3), sin(t * 1.1)) * amount
 
 
-# --- FOV --------------------------------------------------------------------
+# --- FOV ----------
 
 ## Punch the FOV by `degrees` over `duration` seconds (negative = zoom in).
 func fov_punch(degrees: float, duration: float = 0.25) -> void:
@@ -123,24 +165,71 @@ func _apply_fov(delta: float) -> void:
 		_zoom_left -= delta
 		var k2: float = clampf(_zoom_left / 1.0, 0.0, 1.0)
 		extra += _zoom_amount * k2
+	# Speed reaction, smoothed so a sprint eases the frame open instead of
+	# snapping it. Clamped by the exported cap.
+	var want_speed: float = clampf(_speed * speed_fov_per_unit, 0.0, speed_fov_max)
+	_speed_fov = lerpf(_speed_fov, want_speed, clampf(3.0 * delta, 0.0, 1.0))
+	extra += _speed_fov
 	_camera.fov = clampf(_fov_base + extra, 30.0, 110.0)
 
 
-# --- Frame ------------------------------------------------------------------
+# --- Frame ----------
+
+## Horizontal velocity of the target (Vector3.ZERO when duck-typing fails).
+func _target_velocity() -> Vector3:
+	if _target == null:
+		return Vector3.ZERO
+	var v: Variant = _target.get("velocity")
+	if v is Vector3:
+		return v as Vector3
+	return Vector3.ZERO
+
+
+static func _flatten(v: Vector3) -> Vector3:
+	return Vector3(v.x, 0.0, v.z)
+
 
 ## Drive follow + shake + fov with an explicit delta (testable).
 func update_camera(delta: float) -> void:
 	if _trauma > 0.0 and _trauma_time > 0.0:
 		_trauma_time -= delta
 		_trauma = maxf(_trauma - TRAUMA_DECAY * delta, 0.0)
+	_update_follow(delta)
 	_apply_fov(delta)
 	if _camera == null or _target == null:
 		return
-	var desired: Vector3 = _target.global_position + _offset
-	var cur: Vector3 = _camera.global_position
-	var k: float = clampf(FOLLOW_LERP * delta, 0.0, 1.0)
-	_camera.global_position = cur.lerp(desired, k)
-	_camera.look_at(_target.global_position + Vector3.UP, Vector3.UP)
+	_camera.look_at(_target.global_position + Vector3.UP * aim_height, Vector3.UP)
+	_apply_roll(delta)
+
+
+## Spring follow: smoothed position + velocity look-ahead.
+func _update_follow(delta: float) -> void:
+	if _camera == null or _target == null:
+		return
+	var vel: Vector3 = _target_velocity()
+	_speed = _flatten(vel).length()
+	var want: Vector3 = _flatten(vel) * lookahead
+	if want.length() > lookahead_max:
+		want = want.normalized() * lookahead_max
+	_lookahead_vec = _lookahead_vec.lerp(want, clampf(8.0 * delta, 0.0, 1.0))
+	var desired: Vector3 = _target.global_position + _offset + _lookahead_vec
+	# Frame-rate independent exponential smoothing: identical feel at any
+	# delta, unlike the old linear lerp.
+	var k: float = 1.0 - exp(-follow_stiffness * delta)
+	_camera.global_position = _camera.global_position.lerp(desired, k)
+
+
+## Subtle roll from lateral motion (absolute, set fresh each frame after the
+## look-at so it never accumulates).
+func _apply_roll(delta: float) -> void:
+	if _camera == null:
+		return
+	var lateral: float = _flatten(_target_velocity()).dot(
+		_camera.global_transform.basis.x)
+	var want: float = clampf(-lateral * roll_per_unit,
+		deg_to_rad(-roll_max), deg_to_rad(roll_max))
+	_roll = lerpf(_roll, want, clampf(6.0 * delta, 0.0, 1.0))
+	_camera.rotation.z = _roll
 
 
 func _physics_process(delta: float) -> void:

@@ -6,13 +6,13 @@
 [sub_resource type="Resource" id="StylePostFX_1"]
 script = ExtResource("2_postfx")
 bloom_intensity = 0.6
-chromatic = 0.5
-vignette = 0.35
-scanline = 0.6
+chromatic = 0.55
+vignette = 0.38
+scanline = 0.55
 saturation = 1.2
 desaturate = 0.0
 glow_strength = 1.3
-glow_bloom = 0.2
+glow_bloom = 0.18
 
 [resource]
 script = ExtResource("1_pack")

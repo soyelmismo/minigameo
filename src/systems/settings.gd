@@ -18,6 +18,13 @@ var _values: Dictionary = {}
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"settings") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("SettingsManager", &"settings", self)
 	for key: String in DEFAULTS:
 		_values[key] = DEFAULTS[key]
 	_save = GameServices.lookup(&"save") as SaveSystem
@@ -25,9 +32,6 @@ func _ready() -> void:
 		for key: String in DEFAULTS:
 			var loaded: Variant = _save.get_setting(StringName(key), DEFAULTS[key])
 			_values[key] = loaded
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"settings", self)
 
 
 func get_value(key: String) -> Variant:

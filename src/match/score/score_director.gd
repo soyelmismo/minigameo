@@ -13,8 +13,14 @@ var _multiplier: float = 1.0
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"score") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("ScoreDirector", &"score", self)
 	config = _load_config()
-	_register_self()
 
 
 func _load_config() -> GameConfig:
@@ -24,11 +30,6 @@ func _load_config() -> GameConfig:
 	var loaded := load("res://src/core/config/game_config.tres") as GameConfig
 	return loaded if loaded != null else GameConfig.new()
 
-
-func _register_self() -> void:
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"score", self)
 
 # --- Combo ------------------------------------------------------------------
 

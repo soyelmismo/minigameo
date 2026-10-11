@@ -12,14 +12,18 @@ var _player: Node3D = null
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"powerups") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("PowerUpDirector", &"powerups", self)
 	if spawner == null:
 		var scene: PackedScene = load("res://src/powerups/powerup_spawner.tscn") as PackedScene
 		if scene != null:
 			spawner = scene.instantiate()
 			add_child(spawner)
-	var locator: Object = GameServices.lookup(&"core")
-	if locator != null and locator.has_method("register"):
-		locator.register(&"powerups", self)
 	_connect_bus()
 
 

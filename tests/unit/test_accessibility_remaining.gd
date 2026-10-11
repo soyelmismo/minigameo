@@ -6,7 +6,16 @@ const SETTINGS_SCRIPT := "res://src/systems/settings.gd"
 const HUD_SCRIPT := "res://src/ui/hud/hud.tscn"
 const COLORS_SCRIPT := "res://src/ui/theme/ui_colors.gd"
 
+var _previous_settings: Object = null
+var _had_settings: bool = false
+var _published_double: bool = false
 
+
+## Publishes a SettingsManager stand-in under the canonical name the HUD looks
+## up. The previous registration is stashed and put back in after_each():
+## the autofree'd double would otherwise be dropped from the locator by its
+## dangling-reference guard and leave &"settings" dead for the rest of the
+## suite (which is how the real SettingsManager autoload disappears).
 func _fake_settings(overrides: Dictionary) -> Object:
 	var script: GDScript = load(SETTINGS_SCRIPT) as GDScript
 	var settings: Object = script.new()
@@ -15,8 +24,29 @@ func _fake_settings(overrides: Dictionary) -> Object:
 		settings.set_value(String(key), overrides[key])
 	var locator: Object = get_tree().root.get_node_or_null("/root/GameServices") as Object
 	if locator != null and locator.has_method("register"):
+		_previous_settings = locator.resolve(&"settings")
+		_had_settings = locator.has_service(&"settings")
+		_published_double = true
 		locator.register(&"settings", settings)
 	return settings
+
+
+func after_each() -> void:
+	var locator: Object = get_tree().root.get_node_or_null("/root/GameServices") as Object
+	if locator == null or not locator.has_method("register"):
+		return
+	# Only undo what this test actually published: a test that never swapped the
+	# service (the pure-shape assertions, say) must leave the registry alone,
+	# otherwise an empty restore wipes the live SettingsManager.
+	if not _published_double:
+		return
+	if _had_settings and _previous_settings != null and is_instance_valid(_previous_settings):
+		locator.register(&"settings", _previous_settings)
+	elif locator.has_method("unregister"):
+		locator.unregister(&"settings")
+	_previous_settings = null
+	_had_settings = false
+	_published_double = false
 
 
 func _make_hud() -> Object:

@@ -31,6 +31,13 @@ var _orphan_check_failed: bool = false
 
 
 func _ready() -> void:
+
+	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
+	# the rest of the game resolves this system via
+	# GameServices.lookup(&"minigames") instead of referencing the autoload.
+	# publish() refuses anything that is not the live singleton, so a
+	# test double built from this script cannot clobber the real one.
+	GameServices.publish("MinigameDirector", &"minigames", self)
 	_ensure_registry()
 	_registry.scan()
 
