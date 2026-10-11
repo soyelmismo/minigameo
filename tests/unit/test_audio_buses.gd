@@ -22,12 +22,14 @@ func after_each() -> void:
 	_director = null
 
 func test_layout_registers_scaffold_buses() -> void:
-	# First registration on a fresh engine: 0 existing.
-	var first: int = _director.setup_buses()
-	assert_eq(first, 0, "fresh registration finds no existing layout buses")
+	# Buses are engine-global and shared across tests in the run, so this
+	# asserts the POSTCONDITION (all layout buses exist) and that a fresh
+	# setup never breaks an existing layout. The "0 pre-existing" case is
+	# covered by test_setup_buses_is_idempotent's before/after counting.
+	_director.setup_buses()
 	for entry: Dictionary in BusLayout.LAYOUT:
-		var name: StringName = entry["name"] as StringName
-		assert_ne(AudioServer.get_bus_index(name), -1, "bus '%s' registered" % name)
+		var bus_name: StringName = entry["name"] as StringName
+		assert_ne(AudioServer.get_bus_index(bus_name), -1, "bus '%s' registered" % bus_name)
 
 func test_setup_buses_is_idempotent() -> void:
 	_director.setup_buses()
