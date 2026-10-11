@@ -4,6 +4,3 @@
 
 [node name="PowerUpSpawner" type="Node3D"]
 script = ExtResource("1_spawner")
-max_active = 6
-spawn_radius = 40.0
-respawn_cooldown_s = 8.0

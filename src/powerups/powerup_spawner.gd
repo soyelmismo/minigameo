@@ -9,19 +9,22 @@ extends Node3D
 ## No conoce la ruleta ni los micro-juegos: solo emite `powerup_collected`
 ## (vía EventBus si existe) y deja que el director decida qué hacer.
 
-## Número de power-ups activos simultáneos (§6.11 "máximo N activos").
-@export var max_active: int = 6
-## Radio de dispersión alrededor del centro de la cuadra.
+## Number of concurrently active power-ups (§6.11 "max N active"). The
+## authoritative value lives in GameConfig.tres (§1.3); -1 means "read it
+## from GameConfig at ready".
+@export var max_active: int = -1
+## Scatter radius around the block center.
 @export var spawn_radius: float = 40.0
-## Cooldown de reaparición tras recogerse, en segundos.
-@export var respawn_cooldown_s: float = 8.0
-## Escena del power-up (placeholder estilizado).
+## Respawn cooldown after a pickup, in seconds. -1 = read GameConfig.
+@export var respawn_cooldown_s: float = -1.0
+## Power-up scene (stylised placeholder).
 @export var powerup_scene: PackedScene
 
 const POWERUP_PATH := "res://src/powerups/powerup.tscn"
+const CONFIG_PATH := "res://src/core/config/game_config.tres"
 
 var _alive: Array[Node] = []
-var _cooldowns: Array[float] = []   # un slot por power-up caído
+var _cooldowns: Array[float] = []   # one slot per collected power-up
 var _player: Node3D = null
 var _rng: Object = null
 
@@ -29,8 +32,25 @@ var _rng: Object = null
 func _ready() -> void:
 	if powerup_scene == null:
 		powerup_scene = load(POWERUP_PATH) as PackedScene
+	_apply_config()
 	_rng = _resolve(&"SeededRNG")
 	_fill()
+
+
+## Balance comes from GameConfig.tres only (§1.3, no duplicated numbers).
+## Explicit exports win when the scene author sets them on purpose.
+func _apply_config() -> void:
+	var cfg: Resource = load(CONFIG_PATH) as Resource
+	if cfg == null:
+		if max_active < 0:
+			max_active = 6
+		if respawn_cooldown_s < 0.0:
+			respawn_cooldown_s = 8.0
+		return
+	if max_active < 0:
+		max_active = int(cfg.get("powerups_max_active"))
+	if respawn_cooldown_s < 0.0:
+		respawn_cooldown_s = float(cfg.get("powerup_respawn_s"))
 
 
 ## Debe llamarse cada frame desde el bucle del juego.
