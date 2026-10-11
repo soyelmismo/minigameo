@@ -44,8 +44,24 @@ func register(service_name: StringName, instance: Object) -> void:
 
 
 ## Resolve a service. Returns null when absent (callers must degrade).
+## A registration whose instance has since been freed is dropped on read:
+## returning a dangling reference would crash every consumer. The value is
+## held as Variant because assigning a freed Object to a typed variable
+## already errors in Godot 4.
 func resolve(service_name: StringName) -> Object:
-	return _services.get(service_name, null)
+	var found: Variant = _services.get(service_name, null)
+	if found == null:
+		return null
+	if not is_instance_valid(found):
+		_services.erase(service_name)
+		return null
+	return found as Object
+
+
+## Drop a registration (scene teardown: the instance is going away and the
+## locator must not hand out a dangling reference).
+func unregister(service_name: StringName) -> void:
+	_services.erase(service_name)
 
 
 func has_service(service_name: StringName) -> bool:

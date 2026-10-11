@@ -106,10 +106,11 @@ func _tree(node: Node) -> Node:
 ## Espera a que un pop/punch vuelva a escala 1. Robusto al framerate:
 ## avanza frames hasta que el tween termina (o hasta un tope).
 func _await_settled(scale_getter: Callable) -> void:
-	var frames := 0
-	while float(scale_getter.call()) > 1.001 and frames < 600:
+	# Wall-clock bound: headless frames run far faster than 60 fps, so a frame
+	# count would bail out while the tween is still mid-flight.
+	var deadline := Time.get_ticks_msec() + 4000
+	while float(scale_getter.call()) > 1.001 and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
-		frames += 1
 
 
 func _settle() -> void:

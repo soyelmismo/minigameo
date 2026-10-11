@@ -143,12 +143,14 @@ func start_minigame(minigame_id: StringName) -> void:
 	EventBus.emit(&"minigame_started", minigame_id)
 
 
-## Micro-game finished: brief style-pop, then back to freeroam.
-func finish_minigame(_result: Resource) -> void:
+## Minigame finished: brief style-pop, then back to freeroam.
+## The event bus already carries `minigame_finished` (emitted by the
+## MinigameDirector, which owns the minigame identity); re-emitting it here
+## would deliver the same event twice to every subscriber.
+func finish_minigame(result: MinigameResult) -> void:
 	if _state != State.MINIGAME:
 		return
 	transition_to(State.STYLE_POP)
-	EventBus.emit(&"minigame_finished", _result)
 
 
 ## Return to title (results shown).

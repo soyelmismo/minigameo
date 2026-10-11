@@ -51,17 +51,17 @@ func test_set_score_updates_counter() -> void:
 
 
 func _await_counter_done(done_getter: Callable) -> void:
-	var frames := 0
-	while not bool(done_getter.call()) and frames < 600:
+	# Tweens advance with real delta time, and headless frames run far faster
+	# than 60 fps, so the bound must be wall-clock, not frame count.
+	var deadline := Time.get_ticks_msec() + 4000
+	while not bool(done_getter.call()) and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
-		frames += 1
 
 
 func _await_settled(scale_getter: Callable) -> void:
-	var frames := 0
-	while float(scale_getter.call()) > 1.001 and frames < 600:
+	var deadline := Time.get_ticks_msec() + 4000
+	while float(scale_getter.call()) > 1.001 and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
-		frames += 1
 
 
 func test_set_combo_updates_multiplier() -> void:

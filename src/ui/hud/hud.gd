@@ -30,7 +30,7 @@ signal play_again_requested()
 var _objective_widget: Control = null
 var _score_target: int = 0
 var _score_displayed: float = 0.0
-var _counter_tween: Tween = null
+var _score_pop: float = 1.0
 var _match_remaining: float = 300.0
 var _pulse_active: bool = false
 var _flavor_timer: SceneTreeTimer = null
@@ -145,16 +145,12 @@ func clear_objective() -> void:
 	_objective_label.text = ""
 
 
-## Score con contador animado + pop (§13.2).
+## Score with an animated counter and pop (§13.2).
 func set_score(value: int) -> void:
 	_score_target = maxi(0, value)
-	if _counter_tween != null and _counter_tween.is_valid():
-		_counter_tween.kill()
-	_counter_tween = create_tween()
-	_counter_tween.tween_method(_tween_score, _score_displayed, float(_score_target), cfg.counter_duration_s)
-	_score_value.scale = Vector2.ONE * cfg.score_pop_scale
-	var back := create_tween()
-	back.tween_property(_score_value, "scale", Vector2.ONE, cfg.pop_duration_s)
+	# Pop lands synchronously so the frame the score rises is already scaled.
+	_score_pop = cfg.score_pop_scale
+	_score_value.scale = Vector2.ONE * _score_pop
 
 
 ## Multiplicador del combo (widget ruidoso, §13.1).
@@ -276,6 +272,23 @@ func _hide_flavor() -> void:
 func _tween_score(v: float) -> void:
 	_score_displayed = v
 	_score_value.text = str(int(v))
+
+
+func _process(delta: float) -> void:
+	# Animated score counter: exponential approach to the target (§13.2).
+	_score_displayed = HudAnim.approach(
+		_score_displayed, float(_score_target), cfg.counter_decay, delta
+	)
+	# Snap when the remaining gap is under one displayed unit: the counter must
+	# land exactly on the final number, not hover one below it (int() floors).
+	if absf(float(_score_target) - _score_displayed) < 1.0:
+		_score_displayed = float(_score_target)
+	var shown := int(_score_displayed)
+	if _score_value.text != str(shown):
+		_score_value.text = str(shown)
+	# Score pop decays back to scale 1.
+	_score_pop = HudAnim.approach(_score_pop, 1.0, cfg.pop_decay, delta)
+	_score_value.scale = Vector2.ONE * _score_pop
 
 
 func _apply_widget_config(widget: Control, recipe: HUDRecipe) -> void:

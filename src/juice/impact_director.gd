@@ -20,12 +20,32 @@ var _flash_peak: float = 0.0
 var _flash_color: Color = Color.WHITE
 var _time_scale_restore: float = 1.0
 var _restore_left: float = 0.0
+## Wall-clock deadline of the active hitstop. Engine.time_scale is GLOBAL
+## state: if the driving GameLoop is paused (pause menu, a test freezing the
+## driver, a teardown), an advance() call may never come back. The director
+## therefore owns its own deadline and always returns the world to normal.
+var _hitstop_deadline_msec: int = 0
 
 
 func _ready() -> void:
+	# The restore must survive a paused driver (pause menu, tests freezing the
+	# GameLoop); gameplay stays paused, only the juice clock self-completes.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var locator: Object = GameServices.lookup(&"core")
 	if locator != null and locator.has_method("register"):
 		locator.register(&"impact", self)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_EXIT_TREE and _hitstop_left > 0.0:
+		# Teardown hygiene (§1.4): never leave the world in slow motion.
+		_restore_time_scale()
+
+
+func _process(_delta: float) -> void:
+	# Safety net: restore the world even if nothing called advance() in time.
+	if _hitstop_left > 0.0 and Time.get_ticks_msec() >= _hitstop_deadline_msec:
+		_restore_time_scale()
 
 
 # --- Public API --------------------------------------------------------------
@@ -48,6 +68,9 @@ func impact_frame(frame: ImpactFrame) -> void:
 	_time_scale_restore = Engine.time_scale
 	Engine.time_scale = maxf(frame.time_scale, 0.01)
 	_restore_left = frame.hitstop_s
+	# A grace window so a slow normal advance() is not preempted by the
+	# wall-clock net, while a stalled driver still recovers.
+	_hitstop_deadline_msec = Time.get_ticks_msec() + int(frame.hitstop_s * 500.0)
 	# Camera shake + FOV punch.
 	var cam: Object = GameServices.lookup(&"camera")
 	if cam is CameraDirector:
@@ -90,11 +113,24 @@ func advance(delta: float) -> void:
 	if _restore_left > 0.0:
 		_restore_left -= delta
 		if _restore_left <= 0.0:
-			Engine.time_scale = _time_scale_restore
+			_restore_time_scale()
 	if _flash_left > 0.0:
 		_flash_left -= delta
 		if _flash_left <= 0.0:
 			_flash_peak = 0.0
+
+
+## Returns Engine.time_scale to its pre-hitstop value and clears the state.
+## Idempotent: safe to call from advance(), from the wall-clock safety net in
+## _process() and from teardown, whichever happens first.
+func _restore_time_scale() -> void:
+	if _hitstop_left <= 0.0 and _restore_left <= 0.0:
+		return
+	_hitstop_left = 0.0
+	_restore_left = 0.0
+	_hitstop_deadline_msec = 0
+	Engine.time_scale = _time_scale_restore
+	_active = null
 
 
 ## Current flash alpha for the PostFXDirector to draw (0..1).

@@ -9,7 +9,8 @@ class_name MultiplierWidget
 @onready var _panel: Panel = %Panel
 
 var _value: float = 1.0
-var _pop_tween: Tween = null
+var _pop_scale: float = 1.0
+var _tint: float = 0.0
 
 
 func _ready() -> void:
@@ -46,14 +47,23 @@ func label_scale() -> float:
 
 
 func _punch() -> void:
-	if _pop_tween != null and _pop_tween.is_valid():
-		_pop_tween.kill()
-	_value_label.scale = Vector2.ONE * (cfg.pop_scale + 0.15)
+	# Deterministic pop driven by _process (HudAnim); no SceneTreeTween, which
+	# does not step in headless runs and hides its timing inside the SceneTree.
+	# The punch is applied synchronously so the frame the value rises is already
+	# scaled; only the return to rest is time-based.
+	_pop_scale = cfg.pop_scale + 0.15
+	_tint = 1.0
+	_value_label.scale = Vector2.ONE * _pop_scale
 	_value_label.modulate = UIColors.PRIMARY
-	_pop_tween = create_tween()
-	_pop_tween.set_parallel(true)
-	_pop_tween.tween_property(_value_label, "scale", Vector2.ONE, cfg.pop_duration_s)
-	_pop_tween.tween_property(_value_label, "modulate", UIColors.TEXT, cfg.pop_duration_s)
+
+
+func _process(delta: float) -> void:
+	if HudAnim.settled(_pop_scale, 1.0) and HudAnim.settled(_tint, 0.0):
+		return
+	_pop_scale = HudAnim.approach(_pop_scale, 1.0, cfg.pop_decay, delta)
+	_tint = HudAnim.approach(_tint, 0.0, cfg.pop_decay, delta)
+	_value_label.scale = Vector2.ONE * _pop_scale
+	_value_label.modulate = UIColors.TEXT.lerp(UIColors.PRIMARY, _tint)
 
 
 func _apply_outline(color: Color) -> void:

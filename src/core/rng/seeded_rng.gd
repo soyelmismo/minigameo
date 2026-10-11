@@ -47,7 +47,9 @@ func _next() -> int:
 	return _state
 
 
-## Float in [0, 1).
+## Float in [0, 1). Explicit `self.` on internal calls: a bare `randf()`
+## inside this script would resolve to the ENGINE global RNG and silently
+## break determinism (scaffold §7.2).
 func randf() -> float:
 	return float(_next() & 0xFFFFFF) / float(0x1000000)
 
@@ -66,7 +68,7 @@ func randi_range(from: int, to: int) -> int:
 func pick(items: Array) -> Variant:
 	if items.is_empty():
 		return null
-	return items[randi_range(0, items.size() - 1)]
+	return items[self.randi_range(0, items.size() - 1)]
 
 
 ## Weighted pick: weights parallel to items. Returns null for empty input.
@@ -79,17 +81,17 @@ func pick_weighted(items: Array, weights: Array[float]) -> Variant:
 	for w in weights:
 		total += maxf(w, 0.0)
 	if total <= 0.0:
-		return items[randi_range(0, items.size() - 1)]
+		return items[self.randi_range(0, items.size() - 1)]
 	# Rejection sampling: draw an index by value and a uniform roll; accept
 	# only when the roll lands under that item's weight share (Lemire-style
 	# unbiased selection with our deterministic stream).
 	for _attempt in 64:
 		var idx: int = _next() % items.size()
 		var threshold: float = maxf(weights[idx], 0.0) / total
-		if randf() < threshold:
+		if self.randf() < threshold:
 			return items[idx]
 	# Deterministic fallback: cumulative scan with a final uniform draw.
-	var roll := randf() * total
+	var roll := self.randf() * total
 	var acc := 0.0
 	for i in items.size():
 		acc += maxf(weights[i], 0.0)

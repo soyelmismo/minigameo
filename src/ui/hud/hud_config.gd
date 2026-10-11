@@ -14,6 +14,10 @@ extends Resource
 @export var pop_scale: float = 1.35
 ## Duración del pop.
 @export var pop_duration_s: float = 0.22
+## Decay constants (1/s) of the HudAnim exponential approach: how fast a pop
+## returns to rest and a counter reaches its target. Higher = snappier.
+@export var pop_decay: float = 22.0
+@export var counter_decay: float = 6.0
 ## Umbral de pulso rojo del timer de micro-juego (§13.1).
 @export var pulse_threshold_s: float = 5.0
 ## Umbral de pulso rojo del timer de partida (§13.1).

@@ -25,6 +25,9 @@ func before_each() -> void:
 	_loop = _autoload("GameLoop")
 	if _loop is Node:
 		(_loop as Node).set_physics_process(false)
+	# A previous test may have left the director in cooldown; start clean.
+	if _director is Node and (_director as Node).has_method("reset_runtime"):
+		(_director as Node).call("reset_runtime")
 	_match.start_match()
 
 
@@ -33,11 +36,11 @@ func after_each() -> void:
 		(_loop as Node).set_physics_process(true)
 
 
-func _autoload(name: String) -> Object:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
+func _autoload(node_name: String) -> Object:
+	var root := get_tree().root
+	if root == null:
 		return null
-	return tree.root.get_node_or_null("/root/" + name) as Object
+	return root.get_node_or_null("/root/" + node_name)
 
 
 # --- Match clock (§5: 5-minute match) ---

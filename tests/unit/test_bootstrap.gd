@@ -26,12 +26,15 @@ func before_each() -> void:
 
 func after_each() -> void:
 	# Restore the previous registration when there was one and it is still
-	# alive; GameServices has no unregister, so this is best-effort.
+	# alive; otherwise unregister the player this test published, so the
+	# locator never hands out a freed instance (§1.4: no dirty state).
 	var locator: Object = _locator()
 	if locator == null:
 		return
 	if _had_player and _previous_player != null and is_instance_valid(_previous_player):
 		locator.register(&"player", _previous_player)
+	elif locator.has_method("unregister"):
+		locator.unregister(&"player")
 
 
 ## Resolve the service locator by PATH (never by class_name): autoload

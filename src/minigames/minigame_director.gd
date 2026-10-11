@@ -65,6 +65,16 @@ func get_cooldown_left() -> float:
 	return _cooldown_left
 
 
+## Clears the runtime state (cooldown, active minigame) without touching the
+## registry. Used by match restarts and by tests that need a clean director.
+func reset_runtime() -> void:
+	_cooldown_left = 0.0
+	if is_active():
+		_active.queue_free()
+		_active = null
+		_active_id = &""
+
+
 ## Debe llamarse cada frame desde el bucle del juego (MatchManager/escena).
 func update(delta: float) -> void:
 	if _cooldown_left > 0.0:
@@ -243,11 +253,9 @@ func _apply_style_and_music(meta: MinigameMetadata) -> void:
 
 func _check_match_timeout() -> void:
 	var mm: Object = _resolve(SERVICE_MATCH)
-	if mm == null:
+	if mm == null or not mm.has_method("time_left"):
 		return
-	if mm.get("time_left") == null:
-		return
-	if float(mm.time_left) <= 0.0:
+	if float(mm.time_left()) <= 0.0:
 		abort(&"MATCH_TIMEOUT")
 
 
@@ -285,7 +293,7 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 	if match_mgr != null and match_mgr.has_method("finish_minigame"):
 		match_mgr.finish_minigame(result)
 
-	_emit(&"minigame_finished", [id, result])
+	_emit(&"minigame_finished", [result])
 	_cooldown_left = cooldown_s
 
 	if is_instance_valid(finished_mg):
