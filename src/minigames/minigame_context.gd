@@ -22,6 +22,11 @@ var player: Node3D = null          # jugador (CharacterBody3D)
 var world_root: Node3D = null      # padre para spawnear entidades
 var arena_center: Vector3 = Vector3.ZERO
 
+# --- Identidad del micro-juego ---
+# La metadata viaja en el contexto (§7.2): el director la resuelve del
+# registro y la inyecta, para que el arquetipo NO la busque por su cuenta.
+var metadata: MinigameMetadata = null
+
 # --- Determinismo y escalado ---
 var rng: Object = null             # SeededRNG determinista por micro-juego
 var difficulty: float = 0.0        # 0..1, sube con el tiempo restante bajo

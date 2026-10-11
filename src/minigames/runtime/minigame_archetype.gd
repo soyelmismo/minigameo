@@ -36,7 +36,8 @@ var _spawned: Array[Node] = []
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
-	_meta = get_metadata()
+	# La metadata llega por el contexto (§7.2); solo si falta se busca.
+	_meta = ctx.metadata if ctx != null and ctx.metadata != null else get_metadata()
 	_duration = _meta.duration_s if _meta != null else 20.0
 	_elapsed = 0.0
 	_combo_max = 0

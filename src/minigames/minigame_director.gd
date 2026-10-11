@@ -31,12 +31,28 @@ var _orphan_check_failed: bool = false
 
 
 func _ready() -> void:
-	_registry = get_node_or_null("MinigameRegistry") as MinigameRegistry
+	_ensure_registry()
+	_registry.scan()
+
+
+## Resuelve el registry: autoload hermano, hijo del director, o nuevo.
+func _ensure_registry() -> void:
+	if _registry != null and is_instance_valid(_registry):
+		_registry.ensure_scanned()
+		return
+	var node: Node = _resolve(&"MinigameRegistry") as Node
+	if node == null:
+		node = get_node_or_null("MinigameRegistry")
+	if node == null:
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null:
+			node = tree.root.get_node_or_null("/root/MinigameRegistry")
+	_registry = node as MinigameRegistry
 	if _registry == null:
 		_registry = MinigameRegistry.new()
 		_registry.name = "MinigameRegistry"
 		add_child(_registry)
-	_registry.scan()
+	_registry.ensure_scanned()
 
 
 ## Verdadero si hay un micro-juego en curso.
@@ -78,16 +94,19 @@ func play(id: StringName, difficulty: float = 0.0) -> bool:
 	if _cooldown_left > 0.0:
 		push_warning("MinigameDirector: cooldown active (%.1fs left)" % _cooldown_left)
 		return false
-	_registry.ensure_scanned()
+	_ensure_registry()
 	var meta := _registry.get_metadata(id)
 	if meta == null:
 		push_error("MinigameDirector: unknown minigame id '%s'" % String(id))
 		return false
-	var scene := _registry.get_archetype_scene(meta.archetype)
 	var instance: Node = null
-	if scene != null:
-		instance = scene.instantiate()
+	if _registry.has_method("instantiate_archetype"):
+		instance = _registry.instantiate_archetype(meta.archetype)
 	else:
+		var scene: PackedScene = _registry.get_archetype_scene(meta.archetype)
+		if scene != null:
+			instance = scene.instantiate()
+	if instance == null:
 		push_error("MinigameDirector: no scene for archetype '%s'" % String(meta.archetype))
 		return false
 	var mg := instance as Minigame
@@ -168,6 +187,7 @@ func get_history() -> Array:
 
 func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContext:
 	var ctx := MinigameContext.create()
+	ctx.metadata = meta
 	ctx.rng = _resolve(&"SeededRNG")
 	ctx.match_manager = _resolve(SERVICE_MATCH)
 	ctx.score = _resolve(SERVICE_SCORE)
@@ -179,13 +199,19 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 	ctx.music = _resolve(SERVICE_MUSIC)
 	ctx.voice = _resolve(SERVICE_VOICE)
 	ctx.player = _resolve_player()
-	ctx.world_root = get_tree().current_scene.get_node_or_null("World") as Node3D
-	if ctx.world_root == null:
-		ctx.world_root = get_tree().current_scene as Node3D
+	# El mundo se resuelve tolerante: en tests headless no hay current_scene.
+	var scene: Node = get_tree().current_scene if get_tree() != null else null
+	if scene != null:
+		ctx.world_root = scene.get_node_or_null("World") as Node3D
+		if ctx.world_root == null:
+			ctx.world_root = scene as Node3D
 	ctx.arena_center = Vector3.ZERO
 	ctx.difficulty = difficulty
+	# time_left_in_match es el tope duro (§7.1): nunca por encima del reloj.
 	if ctx.match_manager != null and ctx.match_manager.get("time_left") != null:
-		ctx.time_left_in_match = float(ctx.match_manager.time_left)
+		var left: Variant = ctx.match_manager.get("time_left")
+		if left is float or left is int:
+			ctx.time_left_in_match = float(left)
 	return ctx
 
 
@@ -244,9 +270,11 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 		score.add_minigame_result(result)
 
 	# --- Impacto vía ImpactDirector si existe (§6.5) ---
+	# El contrato de ImpactDirector.impact() es por peso entero (§6.5):
+	# WEIGHT_LIGHT/MEDIUM/HEAVY/CRITICAL = 0..3. Degrada si no existe.
 	var impact: Object = _resolve(SERVICE_IMPACT)
 	if impact != null and impact.has_method("impact"):
-		impact.impact(&"CRITICAL" if result != null and result.success else &"HEAVY")
+		impact.impact(3 if result != null and result.success else 2)
 
 	# --- Revertir estilo (§6.4) ---
 	var style: Object = _resolve(SERVICE_STYLE)
@@ -270,8 +298,8 @@ func _verify_orphans_before(mg: Minigame) -> void:
 	_orphan_check_failed = false
 	if mg == null or not is_instance_valid(mg):
 		return
-	var world: Node = get_tree().current_scene
-	if world == null:
+	var tree := get_tree()
+	if tree == null or tree.current_scene == null:
 		return
 	# Un nodo en el grupo `mg_entity` que NO cuelgue del micro-juego es huérfano.
 	for node: Node in get_tree().get_nodes_in_group(&"mg_entity"):

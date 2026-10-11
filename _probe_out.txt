@@ -1,0 +1,9 @@
+title_screen.gd null=false
+can_instantiate=false
+reload_keep_state=false
+after_reload can_instantiate=false
+res://src/ui/screens/title_screen.gd COMPILES=false
+res://src/ui/screens/pause_menu.gd COMPILES=true
+res://src/ui/screens/results_screen.gd COMPILES=true
+res://src/ui/screens/settings_panel.gd COMPILES=true
+res://src/ui/screens/accessibility_settings.gd COMPILES=true
