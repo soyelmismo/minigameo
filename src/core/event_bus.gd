@@ -20,6 +20,9 @@ signal powerup_collected(minigame_id: StringName)
 signal roulette_started()
 signal roulette_result(id: StringName)
 signal minigame_started(id: StringName)
+## Full-screen announcement beat: carries the metadata so the UI can show the
+## name, objective and flavour text before the round starts (§13.2).
+signal minigame_announced(meta: Resource)
 signal minigame_finished(result: MinigameResult)
 signal style_applied(pack_id: StringName)
 signal style_reverted()

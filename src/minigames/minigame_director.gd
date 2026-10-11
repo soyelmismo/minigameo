@@ -141,7 +141,16 @@ func play(id: StringName, difficulty: float = 0.0) -> bool:
 	_history.append(id)
 	_emit(&"minigame_started", [id])
 	_apply_style_and_music(meta)
+	_announce(meta)
 	return true
+
+
+## Full-screen roulette announcement (scaffold §13.2): the dramatic beat that
+## names the micro-game, its objective and its flavour BEFORE the round starts.
+## Routed through the EventBus so the director never reaches into the UI
+## (§1.1); a missing subscriber degrades to nothing at all.
+func _announce(meta: MinigameMetadata) -> void:
+	_emit(&"minigame_announced", [meta])
 
 
 ## Solicita la finalización anticipada (aborto del director). Fuerza el

@@ -30,6 +30,8 @@ const RESULTS_SCENE := "res://src/ui/screens/results_screen.tscn"
 var _title: TitleScreen = null
 var _pause: PauseMenu = null
 var _results: ResultsScreen = null
+## Resolved lazily from the HUD at boot; the HUD owns its lifecycle (§1.1).
+var _roulette_ui: Object = null
 ## True once a match has started and before it ends: the pause key is live.
 var _match_live: bool = false
 
@@ -41,6 +43,7 @@ func _ready() -> void:
 	assert(player != null, "Player layer missing in main.tscn")
 	assert(hud != null, "HUD layer missing in main.tscn")
 	assert(effects != null, "Effects layer missing in main.tscn")
+	_roulette_ui = _find_roulette_ui()
 	_build_screens()
 	_connect_bus()
 
@@ -120,6 +123,20 @@ func _connect_bus() -> void:
 	bus.match_started.connect(_on_match_started)
 	bus.match_time_up.connect(_on_match_time_up)
 	bus.match_reset.connect(_on_match_reset)
+	# The roulette announcement beat: the UI reacts, the director only emits
+	# (§1.1 — no direct references from the minigame layer to the HUD).
+	if bus.has_signal("minigame_announced") and _roulette_ui != null:
+		bus.connect("minigame_announced",
+			Callable(_roulette_ui, "announce_from_metadata"))
+
+
+## Resolves the RouletteUI wherever it lives in the HUD (duck-typed: the HUD
+## composes it, so this scene never owns its lifecycle).
+func _find_roulette_ui() -> Object:
+	var node := hud.get_node_or_null(^"%RouletteUI") if hud != null else null
+	if node == null and hud != null:
+		node = hud.find_child("RouletteUI", true, false)
+	return node as Object
 
 
 func _on_play_pressed() -> void:
