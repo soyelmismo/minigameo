@@ -260,6 +260,12 @@ func _wire_facade() -> void:
 		sfx_player.library = sfx_library
 		for group: StringName in SFXLibrary.DEFAULT_GROUP_CAPS:
 			sfx_player.set_group_cap(group, int(SFXLibrary.DEFAULT_GROUP_CAPS[group]))
+		# An impact frame carries a BARE AudioStream, so it routes through
+		# GameConfig's impact_sfx_group — a different name from the catalog's
+		# "impact" group. Registering the cap under the configured name is what
+		# makes §10.2's "voice-limit per group" apply to impacts at all.
+		var impact_cap: Variant = SFXLibrary.DEFAULT_GROUP_CAPS.get(&"impact", 0)
+		sfx_player.set_group_cap(sfx_player.impact_group, int(impact_cap))
 	if voice_director != null:
 		voice_director.setup(VoiceLines.new())
 		voice_director.music_director = music_director

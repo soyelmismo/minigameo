@@ -34,10 +34,15 @@ const VOLUME_RAND_DB: float = 1.5     # ±1.5 dB
 const IMPACT_PRIORITY: int = 90
 const IMPACT_GROUP: StringName = &"impact"
 const IMPACT_VOLUME_DB: float = 0.0
+## Priority ceiling for a voice. MAX_VOICES_HARD_LIMIT is a COUNT of pool
+## slots, not a priority bound: clamping a priority with it silently
+## truncated GameConfig's impact_sfx_priority (90) down to 64, so an impact
+## ranked lower than the data says it should.
+const MAX_PRIORITY: int = 255
 
 var impact_priority: int = IMPACT_PRIORITY:
 	set(value):
-		impact_priority = clampi(value, 0, MAX_VOICES_HARD_LIMIT)
+		impact_priority = clampi(value, 0, MAX_PRIORITY)
 var impact_group: StringName = IMPACT_GROUP:
 	set(value):
 		impact_group = value
@@ -160,9 +165,16 @@ func play_impact(stream: AudioStream, volume_db: float = 0.0) -> AudioStreamPlay
 	_voice_start[idx] = float(Time.get_ticks_msec())
 	_group_counts[impact_group] = int(_group_counts.get(impact_group, 0)) + 1
 	_playing_count += 1
-	# Same release bookkeeping as play(): without the finished connection the
-	# impact group counters would leak and saturate the group cap.
-	voice.finished.connect(_on_voice_finished.bind(voice, &"", IMPACT_GROUP), Object.CONNECT_ONE_SHOT)
+	# Same release bookkeeping as play(): the group that was INCREMENTED
+	# (impact_group, read from GameConfig) must be the group that is
+	# DECREMENTED here. Binding the IMPACT_GROUP constant instead leaked the
+	# counter upward forever, which saturates the impact group cap after a
+	# handful of hits even though nothing was playing any more.
+	voice.finished.connect(_on_voice_finished.bind(voice, &"", impact_group), Object.CONNECT_ONE_SHOT)
+	# ...and it has to actually SOUND: without play() the voice is routed,
+	# booked and then left silent, so every impact frame is inaudible while
+	# still occupying a pool slot.
+	voice.play()
 	return voice
 
 ## Plays a cataloged SFX. Returns the voice used, or null when skipped
