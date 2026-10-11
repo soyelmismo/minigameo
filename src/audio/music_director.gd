@@ -501,8 +501,13 @@ func _advance_duck(delta: float) -> void:
 		_duck_hold_left = maxf(0.0, _duck_hold_left - delta)
 		if _duck_hold_left <= 0.0:
 			# Timed duck expired: release it through the fade, not a jump.
+			# _begin_duck_ramp() RE-ANCHORS the span to wherever the duck
+			# actually is. Assigning _duck_target directly (as this did) left
+			# the stale _duck_from behind it, so the release measured its rate
+			# over a 0 dB span and crawled at 0.0001 dB per frame: after a
+			# single CRITICAL impact the bed stayed dipped for minutes.
 			_duck_active = false
-			_duck_target = 0.0
+			_begin_duck_ramp(0.0)
 	var target: float = _duck_target if _duck_active else 0.0
 	if not is_equal_approx(_duck_gain, target):
 		# CONSTANT rate in dB/second over the distance this ramp is travelling
