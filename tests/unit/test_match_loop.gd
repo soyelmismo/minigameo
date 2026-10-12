@@ -148,10 +148,15 @@ func test_minigame_never_runs_past_match_time() -> void:
 
 
 func _registry_ids() -> Array:
+	# The shared catalog is published as &"registry" (and may hang anywhere in
+	# the tree), so resolve it through the service locator first rather than
+	# assuming a child node name that the director is free to change.
 	var director_node := _director as Node
 	if director_node == null:
 		return []
-	var registry: Object = director_node.get_node_or_null("MinigameRegistry") as Object
+	var registry: Object = GameServices.lookup(&"registry")
+	if registry == null:
+		registry = director_node.get_node_or_null("MinigameRegistry") as Object
 	if registry == null:
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree != null:

@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://src/world/city_block.tscn" id="city_block_tscn"]
 [ext_resource type="PackedScene" path="res://src/player/player_avatar.tscn" id="player_tscn"]
 [ext_resource type="PackedScene" path="res://src/ui/hud/hud.tscn" id="hud_tscn"]
+[ext_resource type="PackedScene" path="res://src/ui/roulette/roulette_ui.tscn" id="roulette_ui_tscn"]
 [ext_resource type="PackedScene" path="res://src/juice/screen_effects/screen_effects.tscn" id="effects_tscn"]
 
 [node name="Main" type="Node"]
@@ -31,3 +32,6 @@ current = true
 [node name="HUD" parent="." instance=ExtResource("hud_tscn")]
 
 [node name="Effects" parent="." instance=ExtResource("effects_tscn")]
+
+[node name="RouletteUI" parent="." instance=ExtResource("roulette_ui_tscn")]
+

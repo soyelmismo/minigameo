@@ -133,10 +133,15 @@ func _connect_bus() -> void:
 ## Resolves the RouletteUI wherever it lives in the HUD (duck-typed: the HUD
 ## composes it, so this scene never owns its lifecycle).
 func _find_roulette_ui() -> Object:
-	var node := hud.get_node_or_null(^"%RouletteUI") if hud != null else null
-	if node == null and hud != null:
-		node = hud.find_child("RouletteUI", true, false)
-	return node as Object
+	# The RouletteUI scene is instanced as a sibling of the HUD in main.tscn, and
+	# a HUD child is still honoured so the HUD scene can carry one. Searching
+	# only inside the HUD is why the announcement never showed: the node was
+	# never there to find.
+	if hud != null:
+		var in_hud := hud.find_child("RouletteUI", true, false)
+		if in_hud != null:
+			return in_hud as Object
+	return get_tree().current_scene.find_child("RouletteUI", true, false) as Object
 
 
 func _on_play_pressed() -> void:

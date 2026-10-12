@@ -1292,50 +1292,82 @@ func test_postfx_is_advanced_exactly_once_per_frame() -> void:
 		"one frame advances the blend by exactly the delta it was given")
 
 
-## Two entire scenes are never instantiated by anything. They are not even
-## referenced by path, so nothing can ever load them.
-func test_documents_two_scenes_are_never_instantiated() -> void:
-	var orphans: PackedStringArray = PackedStringArray([
-		"src/powerups/roulette/roulette_wheel.tscn",
-		"src/match/score/score_popup.tscn",
-	])
+## Every .tscn under src/ must be reachable: an unreferenced scene is dead
+## weight, and a scene pointing at a missing script fails at load time.
+func test_every_scene_is_reachable() -> void:
+	var orphans: PackedStringArray = _unreferenced_scenes()
 	_report(PackedStringArray([
 		"",
-		"===== ORPHAN SCENES (never referenced outside themselves) =====",
+		"===== SCENE REACHABILITY =====",
+		"unreferenced .tscn under src/: %s" % str(orphans),
+		"==========",
 	]))
-	for path: String in orphans:
-		var refs := _count_references_to(path)
-		_report(PackedStringArray([String(path) + " -> " + str(refs) + " reference(s) in src/, tests/, and all .tscn/.tres"]))
-		assert_eq(refs, 0,
-			"DOCUMENTED DEFECT: %s is never referenced, so it can never be loaded. "
-			% path + "The subsystem inside it is dead: roulette_wheel.tscn is a bare Node "
-			+ "holding the RouletteController script, score_popup.tscn a Label3D holding ScorePopup")
-		assert_true(FileAccess.file_exists("res://" + path), "the scene file itself still exists")
-	# The scripts they attach are also orphaned.
-	var wheel_script: String = "src/powerups/roulette/roulette_wheel.gd"
-	assert_false(FileAccess.file_exists("res://" + wheel_script),
-		"roulette_wheel.gd does not even exist: the scene points at a script file that is gone")
+	assert_eq(orphans.size(), 0,
+		"every scene under src/ is referenced by code or by another scene: an "
+		+ "orphan .tscn can never load, so whatever it holds is dead")
+	# The pooled score popup in particular must stay wired: ScoreDirector loads
+	# it, and the pool is what keeps §1.4/§7 honest.
+	assert_gt(_count_references_to("src/match/score/score_popup.tscn"), 0,
+		"score_popup.tscn is loaded by ScoreDirector through the ObjectPool")
 
 
-## ObjectPool — the pooling infrastructure AGENTS.md §1.4/§7 require — is only
-## ever used from tests. ScorePopup's own comment claims pooling; nothing pools.
-func test_documents_object_pool_is_never_used_outside_tests() -> void:
+## Every .tscn under src/ that nothing else references.
+func _unreferenced_scenes() -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var scenes: PackedStringArray = _scene_files_under("src")
+	for path: String in scenes:
+		# The project's main scene is referenced by project.godot, not by any
+		# file under src/, so it is reachable by definition.
+		if path == "src/bootstrap/main.tscn":
+			continue
+		if _count_references_to(path) == 0:
+			out.append(path)
+	return out
+
+
+## All .tscn files under a directory, recursively.
+func _scene_files_under(dir_path: String) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var stack: Array[String] = [dir_path]
+	while not stack.is_empty():
+		var dir_path_now: String = stack.pop_back()
+		var dir := DirAccess.open(dir_path_now)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		var file_name: String = dir.get_next()
+		while file_name != "":
+			var p: String = dir_path_now + "/" + file_name
+			if dir.current_is_dir():
+				if file_name != "." and file_name != "..":
+					stack.append(p)
+			elif file_name.ends_with(".tscn"):
+				out.append(p.trim_prefix("res://"))
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	return out
+
+
+## ObjectPool — the pooling infrastructure AGENTS.md §1.4/§7 require — must be
+## used by production code, not only by tests.
+func test_object_pool_is_used_by_production_code() -> void:
 	var mentions: PackedStringArray = _count_references_to_dir("src/core/pooling", "src", true)
 	var constructions: PackedStringArray = _count_pool_constructions()
 	_report(PackedStringArray([
 		"",
-		"===== POOLING DISCONNECTED FROM THE GAME =====",
+		"===== POOLING WIRING =====",
 		"src/ files mentioning ObjectPool (excluding src/core/pooling/): %s" % str(mentions),
 		"src/ files that actually build a pool (ObjectPool.new(...)): %s" % str(constructions),
 		"pooling module: src/core/pooling/object_pool.gd",
-		"claimed consumer: src/match/score/score_popup.gd — its header comment only",
+		"consumer that builds a pool: src/match/score/score_director.gd",
 		"============================================================",
 	]))
-	assert_eq(constructions.size(), 0,
-		"DOCUMENTED DEFECT: nothing in src/ ever constructs an ObjectPool, so "
-		+ "AGENTS.md §1.4/§7's pooling requirement is unmet: the only mention "
-		+ "outside src/core/pooling/ is a comment in the orphan scene's script "
-		+ "(src/match/score/score_popup.gd:5)")
+	assert_gt(constructions.size(), 0,
+		"AGENTS.md §1.4/§7 pooling: production code builds an ObjectPool. "
+		+ "ScoreDirector now pools its world-space score popups, so a scoring "
+		+ "burst during a micro-game reuses Label3D nodes instead of "
+		+ "queue_free()-ing several per second")
+	# Sanity: the pool class itself is healthy when driven directly.
 	# Sanity: the pool class itself is healthy when driven directly.
 	var PoolScript: GDScript = load("res://src/core/pooling/object_pool.gd") as GDScript
 	assert_not_null(PoolScript, "ObjectPool script loads")

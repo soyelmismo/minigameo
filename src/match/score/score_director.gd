@@ -11,6 +11,16 @@ var combo: int = 0
 var _combo_timer: float = 0.0
 var _multiplier: float = 1.0
 
+## World-space "+points" popups (scaffold §6.3). They go through an ObjectPool
+## rather than queue_free: a scoring burst during a micro-game would otherwise
+## allocate and free several Label3D nodes per second (§1.4, §7 budgets).
+const POPUP_SCENE_PATH := "res://src/match/score/score_popup.tscn"
+const POPUP_POOL_MAX := 24
+
+var _popup_scene: PackedScene = null
+var _popup_pool: ObjectPool = null
+var _popups: Array[Node] = []
+
 
 func _ready() -> void:
 
@@ -67,6 +77,39 @@ func add_points(points: int) -> void:
 		return
 	total_score += points
 	EventBus.emit(&"score_changed", total_score, points)
+	spawn_score_popup(points)
+
+
+## Shows a world-space "+points" near the player, reusing a pooled instance
+## (AGENTS.md §1.4/§7: no queue_free in hot paths). The pool and its parent are
+## resolved lazily, so a headless run without those nodes simply shows nothing
+## instead of failing.
+func spawn_score_popup(points: int) -> void:
+	var scene: PackedScene = _popup_scene_or_null()
+	var parent: Node = _resolve_popup_parent()
+	if parent == null or scene == null:
+		return
+	if _popup_pool == null:
+		_popup_pool = ObjectPool.new(scene, parent, POPUP_POOL_MAX, true)
+	var popup: Node = _popup_pool.acquire()
+	if popup == null or not popup.has_method("arm"):
+		return
+	popup.call("arm", points, _resolve_player_position())
+	_popups.append(popup)
+
+
+## Drives the popup rise/fade and releases the finished ones back to the pool.
+func _advance_popups(delta: float) -> void:
+	for i: int in range(_popups.size() - 1, -1, -1):
+		var popup: Node = _popups[i]
+		if not is_instance_valid(popup):
+			_popups.remove_at(i)
+			continue
+		popup.call("advance", delta)
+		if popup.has_method("is_finished") and bool(popup.call("is_finished")):
+			if _popup_pool != null:
+				_popup_pool.release(popup)
+			_popups.remove_at(i)
 
 
 ## Score a finished micro-game: base + combo multiplier + time bonus.
@@ -132,3 +175,32 @@ func advance(delta: float) -> void:
 		_combo_timer -= delta
 		if _combo_timer <= 0.0:
 			break_combo()
+	_advance_popups(delta)
+
+
+# --- Score popups ----------
+
+## The scene the popups are built from. Loaded lazily so a missing scene only
+## disables the visual layer, never the scoring.
+func _popup_scene_or_null() -> PackedScene:
+	if _popup_scene == null:
+		_popup_scene = load(POPUP_SCENE_PATH) as PackedScene
+	return _popup_scene
+
+
+## The node the popups hang from: the world root of the running scene, so a
+## popup is positioned in the same space as the player.
+func _resolve_popup_parent() -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.current_scene == null:
+		return null
+	return tree.current_scene.get_node_or_null("World")
+
+
+## Where a popup should appear: just above the player when one exists, otherwise
+## the world origin.
+func _resolve_player_position() -> Vector3:
+	var player: Object = GameServices.lookup(&"player")
+	if player is Node3D:
+		return (player as Node3D).global_position
+	return Vector3.ZERO
