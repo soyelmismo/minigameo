@@ -738,12 +738,12 @@ pack) is in `docs/design/minigames.md`.
 | 3 | grocery_getaway | Grocery Getaway | COLLECT_RUSH | LIFE | Grab groceries; don't let the self-checkout catch you |
 | 4 | porch_pirate | Porch Pirate | COLLECT_RUSH | LIFE | Packages appear. Pirates appear. Grab first |
 | 5 | hallucination_highway | Hallucination Highway | DODGE | AI | Dodge confidently-wrong answers. They're SO sure |
-| 6 | gpu_meltdown | GPU Meltdown | DODGE | AI | Overheating GPUs are raining. Find shade |
+| 6 | gpu_meltdown | GPU Meltdown | DODGE | HYBRID | Overheating GPUs are raining. Find shade |
 | 7 | commuter_chaos | Commuter Chaos | DODGE | LIFE | 8:47 AM. Umbrellas everywhere. Good luck |
 | 8 | laundry_landmine | Laundry Landmine | DODGE | LIFE | The dryer eats socks. And apparently you now |
 | 9 | bias_bug_bash | Bias Bug Bash | TAP_TARGET | AI | Whack the bias bugs. They keep popping up |
 | 10 | spam_smash | Spam Smash | TAP_TARGET | LIFE | "YOU WON A CRUISE!" Smash it. Smash them all |
-| 11 | autocomplete_alley | Autocomplete Alley | TAP_TARGET | AI | Tap what it predicts. Or rebel. Rebelling loses points |
+| 11 | autocomplete_alley | Autocomplete Alley | TAP_TARGET | HYBRID | Tap what it predicts. Or rebel. Rebelling loses points |
 | 12 | notification_nuke | Notification Nuke | TAP_TARGET | LIFE | 47 notifications. Tap them before they breed |
 | 13 | beat_of_the_bot | Beat of the Bot | RHYTHM | AI | Pulse to the synthetic rhythm. You can tell. Barely |
 | 14 | barista_blitz | Barista Blitz | RHYTHM | LIFE | Espresso machine rhythm. Tap on the hiss |
@@ -754,11 +754,11 @@ pack) is in `docs/design/minigames.md`.
 | 19 | combo_commute | Combo Commute | COMBO_CHAIN | LIFE | Transfer, transfer, transfer. Don't miss the line |
 | 20 | stack_overflow | Stack Overflow | BALANCE | HYBRID | Balance the overloaded stack. Don't drop the frame |
 | 21 | context_recall | Context Recall | MEMORY | AI | Remember the context. Before it's evicted |
-| 22 | password_palace | Password Palace | MEMORY | LIFE | Remember the password. It was the good one |
-| 23 | learning_rate | Learning Rate | METER_STOP | AI | Stop the LR in the sweet spot. Too high = explode |
+| 22 | password_palace | Password Palace | MEMORY | AI | Remember the password. It was the good one |
+| 23 | learning_rate | Learning Rate | METER_STOP | HYBRID | Stop the LR in the sweet spot. Too high = explode |
 | 24 | push_and_pray | Push & Pray | CHARGE_BLAST | HYBRID | Time the git push. Main branch is watching |
 | 25 | feature_freeze | Feature Freeze | PUSH_ZONE | HYBRID | Push features to the release zone. Or scope creep |
-| 26 | inference_inferno | Inference Inferno | CHASE | AI | Chase the runaway inference. It's fast. Too fast |
+| 26 | inference_inferno | Inference Inferno | CHASE | HYBRID | Chase the runaway inference. It's fast. Too fast |
 | 27 | delivery_dash | Delivery Dash | CHASE | LIFE | Chase the driver. They saw you. They keep driving |
 | 28 | tech_debt_tower | Tech Debt Tower | STACK_TIMED | HYBRID | Stack the debt. It'll fall. It always falls |
 | 29 | elevator_endurance | Elevator Endurance | ZONE_HOLD | LIFE | Hold the door. Someone's coming. Always |

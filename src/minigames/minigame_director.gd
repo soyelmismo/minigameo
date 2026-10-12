@@ -407,6 +407,13 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 
 ## Checks before the teardown that the micro-game has no loose nodes
 ## outside its own subtree (defence of the §1.4 invariant).
+##
+## Known false positive: an entity whose lifetime expired calls _despawn(),
+## which uses queue_free() — deferred to the end of the frame. If a micro-game
+## is finished early (a director abort, or the runtime benchmark forcing the
+## end), those entities are still in the mg_entity group for the remainder of
+## the frame and are reported here before teardown() frees them. The
+## after-check is the authoritative one; this is an early warning.
 func _verify_orphans_before(mg: Minigame) -> void:
 	_orphan_check_failed = false
 	if mg == null or not is_instance_valid(mg):

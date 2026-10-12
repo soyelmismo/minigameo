@@ -234,6 +234,11 @@ func _configure_entity(node: Node, recipe: SpawnRecipe) -> void:
 	_set_export(node, "size", recipe.entity_size)
 	_set_export(node, "shape", _shape_id(recipe.entity_shape))
 	_set_export(node, "lifetime_s", recipe.lifetime_s)
+	# Motion is what makes a hazard move. Seven DODGE micro-games declare
+	# FALL or CHASE and the entity used to ignore it, so their hazards sat
+	# still while the objective text promised rain and pursuit.
+	_set_export(node, "motion", recipe.motion)
+	_set_export(node, "move_speed", recipe.speed)
 
 
 ## Maps a SpawnRecipe shape name onto the entity's Shape enum id, so the `.tres`

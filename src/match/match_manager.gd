@@ -44,6 +44,14 @@ func _ready() -> void:
 	if config == null:
 		config = GameConfig.new()
 		push_warning("MatchManager: config .tres missing, using defaults")
+	# Publish the config as a service too. ScoreDirector and SFXPlayer resolve
+	# &"config" and, when it is missing, each silently loads game_config.tres
+	# from disk on its own — two private copies instead of one shared instance,
+	# and any service that publishes a different config is ignored. This used to
+	# live in _register_self(), which nothing ever called.
+	var locator: Node = GameServices.lookup(&"core") as Node
+	if locator != null and locator.has_method("register") and config != null:
+		locator.register(&"config", config)
 	_time_left = config.match_length_s
 	_connect_event_bus()
 	transition_to(State.TITLE)
@@ -65,14 +73,7 @@ func _on_roulette_result(id: StringName) -> void:
 
 
 ## Publishes the match system and the loaded GameConfig under their canonical
-## names. publish() refuses anything that is not the live autoload singleton,
-## so a test double built from this script cannot clobber the real service and
-## then leave &"match"/&"config" dangling when it is freed.
-func _register_self() -> void:
-	GameServices.publish("MatchManager", &"match", self)
-	var locator: Node = GameServices.lookup(&"core") as Node
-	if locator != null and locator.has_method("register") and config != null:
-		locator.register(&"config", config)
+## names from _ready().
 
 
 # --- Public API -------------------------------------------------------------

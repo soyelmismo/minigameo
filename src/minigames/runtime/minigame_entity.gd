@@ -46,16 +46,63 @@ func _ready() -> void:
 ## or an archetype can slow a heavy entity down.
 @export var rotation_speed: Vector3 = Vector3(0.0, 1.6, 0.0)
 
+## How this entity moves, from SpawnRecipe.motion. STATIC (the default) only
+## rotates; FALL drops it toward the floor; CHASE steers it toward the player.
+## Every DODGE micro-game that declares FALL or CHASE depends on this: without
+## it the hazards sit still while the objective text promises rain and pursuit.
+@export var motion: StringName = &"STATIC"
+
+## Chase speed in m/s, from SpawnRecipe.speed. Only used when motion is CHASE.
+@export var move_speed: float = 4.0
+
+## Where CHASE steers toward. Set by the archetype that spawns the entity;
+## without it the entity falls back to the player in its group.
+var chase_target: Node3D = null
+
+## Ground height, so FALL lands instead of sinking forever.
+const FALL_FLOOR_Y := 0.35
+
 
 
 func _process(delta: float) -> void:
 	rotate_x(rotation_speed.x * delta)
 	rotate_y(rotation_speed.y * delta)
 	rotate_z(rotation_speed.z * delta)
+	_apply_motion(delta)
 	if _life_left > 0.0:
 		_life_left -= delta
 		if _life_left <= 0.0:
 			_expire()
+
+
+## Applies the slot's motion. STATIC is the common case and costs nothing; the
+## other modes are the difference between a hazard and a decoration.
+func _apply_motion(delta: float) -> void:
+	match motion:
+		&"FALL":
+			# Straight down, at the slot's speed. Lands on the floor and stays.
+			var next_y: float = position.y - move_speed * delta
+			position.y = maxf(next_y, FALL_FLOOR_Y)
+		&"CHASE":
+			var target: Node3D = _resolve_chase_target()
+			if target == null or not is_instance_valid(target):
+				return
+			var to_target: Vector3 = target.global_position - global_position
+			to_target.y = 0.0
+			var dist: float = to_target.length()
+			if dist <= 0.001:
+				return
+			# Fixed step, so a fast entity cannot teleport through the player.
+			var step: float = minf(move_speed * delta, dist)
+			global_position += to_target.normalized() * step
+
+
+## The node CHASE steers toward: the archetype's target, else the player.
+func _resolve_chase_target() -> Node3D:
+	if chase_target != null and is_instance_valid(chase_target):
+		return chase_target
+	var player: Node = get_tree().get_first_node_in_group(&"player")
+	return player as Node3D
 
 
 ## The pickup contract. Safe to call more than once; only the first call wins.
