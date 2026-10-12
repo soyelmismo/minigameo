@@ -280,12 +280,12 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 	ctx.music = _resolve(SERVICE_MUSIC)
 	ctx.voice = _resolve(SERVICE_VOICE)
 	ctx.player = _resolve_player()
-	# The world is resolved tolerantly: in headless tests there is no current_scene.
-	var scene: Node = get_tree().current_scene if get_tree() != null else null
-	if scene != null:
-		ctx.world_root = scene.get_node_or_null("World") as Node3D
-		if ctx.world_root == null:
-			ctx.world_root = scene as Node3D
+	# The world is resolved tolerantly: in headless tests there is no
+	# current_scene, and a scene that only hosts the game (a launcher, a
+	# measurement harness) does not own the "World" node itself. Searching the
+	# tree keeps every micro-game spawnable instead of silently running with a
+	# null world_root, which left them with zero entities and no failure signal.
+	ctx.world_root = _resolve_world_root()
 	ctx.arena_center = Vector3.ZERO
 	ctx.difficulty = difficulty
 	# time_left_in_match is the hard cap (§7.1): never above the clock.
@@ -294,6 +294,27 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 		if left is float or left is int:
 			ctx.time_left_in_match = float(left)
 	return ctx
+
+
+## Finds the "World" layer wherever it hangs in the tree. The direct child of
+## current_scene is the common case, but the game can be hosted by any scene,
+## and a null world_root silently disables entity spawning in every micro-game.
+func _resolve_world_root() -> Node3D:
+	if get_tree() == null:
+		return null
+	var scene: Node = get_tree().current_scene
+	if scene != null:
+		var direct: Node3D = scene.get_node_or_null("World") as Node3D
+		if direct != null:
+			return direct
+	var stack: Array[Node] = [get_tree().root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is Node3D and String(n.name) == "World":
+			return n as Node3D
+		for c in n.get_children():
+			stack.append(c)
+	return null
 
 
 ## Resolves a system by name in the root tree. Null if it does not exist.
