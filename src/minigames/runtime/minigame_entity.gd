@@ -92,6 +92,13 @@ func _build_visual() -> void:
 func _apply_shape() -> void:
 	if _mesh == null:
 		return
+	# Deliberately low segment counts. These are small, fast-moving targets read
+	# at distance and across a whole arena, so the silhouette matters and the
+	# tessellation does not. A default SphereMesh is 64x32 segments (~4600
+	# primitives) and a TorusMesh 32x12; 16 entities of those alone blew the
+	# 250k/frame primitive budget in scaffold §15 before the city was even
+	# counted. The values below are the cheapest that still read as a sphere /
+	# ring at gameplay distance.
 	match shape:
 		Shape.BOX:
 			var box := BoxMesh.new()
@@ -106,11 +113,18 @@ func _apply_shape() -> void:
 			var torus := TorusMesh.new()
 			torus.inner_radius = size * 0.5
 			torus.outer_radius = size
+			# 8x5 keeps the ring legible while costing 1/8 of the default.
+			torus.rings = 8
+			torus.ring_segments = 5
 			_mesh.mesh = torus
 		_:  # SPHERE
+			# A two-lobe low-poly sphere reads as a sphere and costs ~1/20 of
+			# the default primitive mesh at these sizes.
 			var sphere := SphereMesh.new()
 			sphere.radius = size * 0.5
 			sphere.height = size
+			sphere.rings = 8
+			sphere.radial_segments = 12
 			_mesh.mesh = sphere
 
 

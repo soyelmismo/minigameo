@@ -154,6 +154,9 @@ func _build_ground() -> void:
 
 func _add_box(parent: Node, prop_name: String, size: Vector3, pos: Vector3,
 		mat: Material) -> MeshInstance3D:
+	# Legacy helper: still used by the props pass, which mixes sizes and shapes
+	# in ways MultiMesh does not help. Buildings no longer come through here;
+	# see _box_batches().
 	var node := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = size
@@ -163,6 +166,59 @@ func _add_box(parent: Node, prop_name: String, size: Vector3, pos: Vector3,
 	node.name = prop_name
 	parent.add_child(node)
 	return node
+
+
+## Collects boxes into per-material batches so the whole block can be drawn in
+## a handful of MultiMeshes instead of one node per box. `_add_box` creates a
+## separate MeshInstance3D each time, and at eight buildings plus sidewalks plus
+## rooftop clutter that reached 390 of the 400 draw-call budget in scaffold §15
+## with the entities already on screen.
+class _BoxBatches:
+	var by_material: Dictionary = {}   # Material -> Array[Transform3D]
+	var order: Array[Material] = []    # insertion order, for stable naming
+
+	func add(size: Vector3, pos: Vector3, mat: Material) -> void:
+		if mat == null:
+			return
+		var xf := Transform3D.IDENTITY.scaled(size)
+		xf.origin = pos
+		add_xf(xf, mat)
+
+	## Adds an already-built transform, for props that need a rotation.
+	func add_xf(xf: Transform3D, mat: Material) -> void:
+		if mat == null:
+			return
+		if not by_material.has(mat):
+			by_material[mat] = [] as Array[Transform3D]
+			order.append(mat)
+		by_material[mat].append(xf)
+
+	## Emits one MultiMeshInstance3D per material under `parent`.
+	func flush(parent: Node, block_size: float) -> void:
+		for i in order.size():
+			var mat: Material = order[i]
+			var xforms: Array[Transform3D] = by_material[mat]
+			if xforms.is_empty():
+				continue
+			var box := BoxMesh.new()
+			box.size = Vector3.ONE
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.use_colors = false
+			mm.use_custom_data = false
+			mm.mesh = box
+			mm.instance_count = xforms.size()
+			for j in xforms.size():
+				mm.set_instance_transform(j, xforms[j])
+			# The batch spans the whole ring; an implicit AABB would cull it.
+			mm.custom_aabb = AABB(
+				Vector3(-block_size * 0.5, 0.0, -block_size * 0.5),
+				Vector3(block_size, 60.0, block_size))
+			var node := MultiMeshInstance3D.new()
+			node.multimesh = mm
+			node.material_override = mat
+			node.name = "BoxBatch_%d" % i
+			parent.add_child(node)
 
 
 # --- Buildings ----------
@@ -182,6 +238,10 @@ func _build_buildings(rng: Object) -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for i in BUILDINGS.size():
 		mats.append(_mat_building(i))
+
+	# Every building volume, sidewalk and rooftop box is batched here and drawn
+	# as one MultiMesh per material, instead of one MeshInstance3D each.
+	var batches := _BoxBatches.new()
 
 	var warm_mat := _mat_emissive(COLOR_WINDOW_WARM, 1.6)
 	var cool_mat := _mat_emissive(COLOR_WINDOW_COOL, 1.8)
@@ -258,14 +318,13 @@ func _build_buildings(rng: Object) -> void:
 
 		# Rooftop clutter: water tank / AC unit, antenna on the tall ones.
 		if h > 18.0:
-			_add_box(root, "Building_%d_Antenna" % i, Vector3(0.2, 5.0, 0.2),
+			batches.add(Vector3(0.2, 5.0, 0.2),
 				Vector3(pos.x - w * 0.25, base + h + 2.5, pos.z), clutter_mat)
 		if rng.randf() < 0.75:
-			_add_box(root, "Building_%d_Tank" % i, Vector3(2.2, 2.2, 2.2),
-				Vector3(pos.x + w * 0.2, base + h + 1.1, pos.z - d * 0.2),
-				tank_mat)
+			batches.add(Vector3(2.2, 2.2, 2.2),
+				Vector3(pos.x + w * 0.2, base + h + 1.1, pos.z - d * 0.2), tank_mat)
 		if rng.randf() < 0.6:
-			_add_box(root, "Building_%d_AC" % i, Vector3(1.6, 0.8, 1.2),
+			batches.add(Vector3(1.6, 0.8, 1.2),
 				Vector3(pos.x - w * 0.2, base + h + 0.4, pos.z + d * 0.25),
 				clutter_mat)
 
@@ -296,6 +355,8 @@ func _build_buildings(rng: Object) -> void:
 			neon_node.transform = nxf
 			neon_node.name = "Building_%d_Neon" % i
 			root.add_child(neon_node)
+
+	batches.flush(root, block_size)
 
 	# All lit windows: two MultiMeshes (warm / cool) = two draw calls for the
 	# whole block instead of ~180 individual meshes.
@@ -361,35 +422,35 @@ func _build_props() -> void:
 	var bench_mat := _mat_simple(Color(0.4, 0.3, 0.2), 0.9)
 	var can_mat := _mat_simple(Color(0.75, 0.72, 0.25), 0.4, 0.3)
 	var wet_mat := _mat_simple(COLOR_WET, 0.08, 0.85)
-
-	# Original greybox props (names stable: the tree layout is tested).
-	_add_box(root, "prop_crate", Vector3(1.0, 1.0, 1.0), Vector3(6, 0.5, 4), crate_mat)
-	_add_box(root, "prop_hydrant", Vector3(0.5, 1.0, 0.5), Vector3(-7, 0.5, 6), hydrant_mat)
-	_add_box(root, "prop_lamppost_a", Vector3(0.3, 4.0, 0.3), Vector3(9, 2.0, -6), metal_mat)
-	_add_box(root, "prop_lamppost_b", Vector3(0.3, 4.0, 0.3), Vector3(-9, 2.0, -6), metal_mat)
-	_add_box(root, "prop_bench", Vector3(2.0, 0.8, 0.7), Vector3(4, 0.4, -9), bench_mat)
-	_add_box(root, "prop_can", Vector3(0.6, 0.8, 0.6), Vector3(-5, 0.4, 9), can_mat)
-
+	var sign_mat := _mat_emissive(COLOR_NEON_MAGENTA, 2.0)
 	# Emissive lamp heads: they light at dusk and feed the glow (no real
 	# lights: forward+ shadow cost stays at one directional light).
 	var head_mat := _mat_emissive(Color(1.0, 0.85, 0.55), 1.8)
-	_add_box(root, "prop_lamppost_head_a", Vector3(0.5, 0.25, 0.5), Vector3(9, 4.1, -6), head_mat)
-	_add_box(root, "prop_lamppost_head_b", Vector3(0.5, 0.25, 0.5), Vector3(-9, 4.1, -6), head_mat)
 
-	# Street clutter that makes the block read as a city, not a test scene.
-	_add_box(root, "prop_trash_bin", Vector3(0.7, 1.0, 0.7), Vector3(11, 0.5, 9), metal_mat)
-	_add_box(root, "prop_cone_0", Vector3(0.5, 0.7, 0.5), Vector3(-3, 0.35, 5.5), hydrant_mat)
-	_add_box(root, "prop_cone_1", Vector3(0.5, 0.7, 0.5), Vector3(4, 0.35, -5.5), hydrant_mat)
-	_add_box(root, "prop_newspaper_box", Vector3(0.8, 1.1, 0.5), Vector3(-12, 0.55, 0), crate_mat)
-	_add_box(root, "prop_neon_sign_post", Vector3(0.25, 5.0, 0.25), Vector3(0, 2.5, 20), metal_mat)
-	var sign := _add_box(root, "prop_neon_sign", Vector3(2.4, 1.2, 0.12),
-		Vector3(0, 5.0, 20), _mat_emissive(COLOR_NEON_MAGENTA, 2.0))
-	sign.rotation.y = deg_to_rad(35.0)
+	# One MultiMesh per material: 18 loose MeshInstance3D nodes cost 18 draw
+	# calls, the batch costs 7 and reads identically at gameplay distance.
+	var batches := _BoxBatches.new()
+	batches.add(Vector3(1.0, 1.0, 1.0), Vector3(6, 0.5, 4), crate_mat)
+	batches.add(Vector3(0.5, 1.0, 0.5), Vector3(-7, 0.5, 6), hydrant_mat)
+	batches.add(Vector3(0.3, 4.0, 0.3), Vector3(9, 2.0, -6), metal_mat)
+	batches.add(Vector3(0.3, 4.0, 0.3), Vector3(-9, 2.0, -6), metal_mat)
+	batches.add(Vector3(2.0, 0.8, 0.7), Vector3(4, 0.4, -9), bench_mat)
+	batches.add(Vector3(0.6, 0.8, 0.6), Vector3(-5, 0.4, 9), can_mat)
+	batches.add(Vector3(0.5, 0.25, 0.5), Vector3(9, 4.1, -6), head_mat)
+	batches.add(Vector3(0.5, 0.25, 0.5), Vector3(-9, 4.1, -6), head_mat)
+	batches.add(Vector3(0.7, 1.0, 0.7), Vector3(11, 0.5, 9), metal_mat)
+	batches.add(Vector3(0.5, 0.7, 0.5), Vector3(-3, 0.35, 5.5), hydrant_mat)
+	batches.add(Vector3(0.5, 0.7, 0.5), Vector3(4, 0.35, -5.5), hydrant_mat)
+	batches.add(Vector3(0.8, 1.1, 0.5), Vector3(-12, 0.55, 0), crate_mat)
+	batches.add(Vector3(0.25, 5.0, 0.25), Vector3(0, 2.5, 20), metal_mat)
+	var sign_xf := Transform3D.IDENTITY.scaled(Vector3(2.4, 1.2, 0.12)) \
+		.rotated_local(Vector3.UP, deg_to_rad(35.0))
+	sign_xf.origin = Vector3(0, 5.0, 20)
+	batches.add_xf(sign_xf, sign_mat)
+	batches.add(Vector3(7.0, 0.03, 5.0), Vector3(16, 0.03, 1.5), wet_mat)
+	batches.add(Vector3(5.0, 0.03, 6.0), Vector3(-18, 0.03, -2.0), wet_mat)
+	batches.flush(root, block_size)
 
-	# Wet asphalt patches: dark, near-mirror roughness. They catch the sky
-	# and neon for a "rained-on city" read at almost no cost.
-	_add_box(root, "prop_wet_road_0", Vector3(7.0, 0.03, 5.0), Vector3(16, 0.03, 1.5), wet_mat)
-	_add_box(root, "prop_wet_road_1", Vector3(5.0, 0.03, 6.0), Vector3(-18, 0.03, -2.0), wet_mat)
 
 
 # --- Spawn points ----------

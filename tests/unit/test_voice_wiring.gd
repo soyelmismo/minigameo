@@ -7,6 +7,13 @@ const VOICE_SCRIPT := "res://src/audio/voice_director.gd"
 const VOICE_LINES_SCRIPT := "res://src/audio/voice_lines.gd"
 
 
+func _autoload(node_name: StringName) -> Object:
+	var root := get_tree().root
+	if root == null:
+		return null
+	return root.get_node_or_null("/root/" + String(node_name)) as Object
+
+
 func _make_voice() -> Object:
 	var voice: Object = load(VOICE_SCRIPT).new()
 	add_child_autofree(voice)

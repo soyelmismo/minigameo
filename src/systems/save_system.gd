@@ -64,6 +64,10 @@ func _load() -> void:
 		var d := data as Dictionary
 		best_score = int(d.get("best_score", 0))
 		best_rank = StringName(str(d.get("best_rank", "D")))
+	# Accessibility settings are persisted too: without this read-back, a player
+	# who turned off camera shake or flashes got the defaults again on the next
+	# launch, which is the exact accessibility failure §8 exists to prevent.
+	_load_settings()
 
 
 func _save() -> void:
@@ -83,3 +87,24 @@ func _save_settings() -> void:
 		return
 	f.store_string(JSON.stringify(_settings))
 	f.close()
+
+
+## Reads the persisted accessibility settings back. A malformed or unreadable
+## file leaves the defaults in place and says so, rather than silently wiping
+## a player's choices.
+func _load_settings() -> void:
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return
+	var f := FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if f == null:
+		push_warning("SaveSystem: could not open %s; keeping default settings" % SETTINGS_PATH)
+		return
+	var text := f.get_as_text()
+	f.close()
+	var data: Variant = JSON.parse_string(text)
+	if data is Dictionary:
+		_settings.merge(data as Dictionary, true)
+	else:
+		push_warning(
+			"SaveSystem: %s is not a settings object; keeping default settings" % SETTINGS_PATH
+		)

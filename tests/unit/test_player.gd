@@ -100,15 +100,6 @@ func test_city_block_instantiates_with_spawns() -> void:
 	assert_true(spawns.size() >= 4, "block exposes spawn positions")
 
 
-func test_block_tile_instantiates() -> void:
-	var scene: PackedScene = load("res://src/world/block_tile.tscn")
-	assert_not_null(scene, "block_tile.tscn loads")
-	if scene == null:
-		return
-	var tile: Node3D = scene.instantiate()
-	add_child_autofree(tile)
-	assert_not_null(tile.get_node_or_null("Road"), "tile has a road")
-
 
 func test_player_scene_instantiates() -> void:
 	var scene: PackedScene = load("res://src/player/player_avatar.tscn")

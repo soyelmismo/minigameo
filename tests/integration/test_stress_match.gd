@@ -1164,7 +1164,35 @@ func test_documents_no_minigame_spawns_a_single_entity() -> void:
 	)
 
 
-## Several services are instantiated more than once.
+## Accessibility settings must survive a relaunch. _save_settings() writes them
+## but _load() used to read only the score file, so every toggle reset — the
+## exact accessibility failure §8 exists to prevent.
+func test_accessibility_settings_survive_a_relaunch() -> void:
+	var save: Object = _autoload("SaveSystem")
+	assert_not_null(save, "SaveSystem autoload present")
+	if save == null:
+		return
+	# A known starting point: the persisted file from an earlier test must not
+	# decide this one.
+	save.set_setting(&"flashes_enabled", true)
+	save.set_setting(&"flashes_enabled", false)
+	assert_false(bool(save.get_setting(&"flashes_enabled", true)),
+		"the value round-trips in memory")
+	assert_true(FileAccess.file_exists("user://arcade_block_settings.json"),
+		"the settings file exists on disk (SaveSystem._save_settings() ran)")
+	# Simulate a relaunch: a fresh SaveSystem reads the same user:// path.
+	# It must enter the tree first, because _load() runs from _ready().
+	var fresh: Object = load("res://src/systems/save_system.gd").new()
+	add_child_autofree(fresh)
+	await wait_frames(1)
+	assert_false(bool(fresh.get_setting(&"flashes_enabled", true)),
+		"a fresh SaveSystem restores the persisted value instead of the default")
+	# And the default is still the default when nothing was persisted: a key the
+	# player never touched must not invent a value.
+	assert_true(bool(fresh.get_setting(&"shake_enabled", true)),
+		"an untouched setting still falls back to its default")
+
+
 ## Exactly ONE MinigameRegistry may be alive. The director and the roulette
 ## each used to build their own, and the director's copy never scanned, so
 ## micro-games ran with empty metadata (no entities, no HUD recipe). The
