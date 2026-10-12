@@ -98,6 +98,15 @@ func set_camera(cam: Camera3D) -> void:
 		_fov_base = cam.fov
 
 
+## Re-reads the resting FOV from the camera. StyleDirector calls this when a
+## pack applies or reverts, so a style's fov_override survives this director's
+## per-frame write — without it, the punch/zoom logic silently clobbered the
+## pack's framing every frame and the slot had no visible effect.
+func refresh_fov_base() -> void:
+	if _camera != null:
+		_fov_base = _camera.fov
+
+
 ## Inject the follow target explicitly.
 func set_target(t: Node3D) -> void:
 	_target = t

@@ -31,16 +31,34 @@ var _orphan_check_failed: bool = false
 
 
 func _ready() -> void:
-
 	# Publish under the canonical service name (scaffold §6 / AGENTS §1.1):
 	# the rest of the game resolves this system via
 	# GameServices.lookup(&"minigames") instead of referencing the autoload.
 	# publish() refuses anything that is not the live singleton, so a
 	# test double built from this script cannot clobber the real one.
 	GameServices.publish("MinigameDirector", &"minigames", self)
+	_refresh_from_config()
 	_ensure_registry()
 	_registry.scan()
 	_connect_bus()
+
+
+## Reads GameConfig.minigame_cooldown_s. The field existed on the config but
+## nothing read it, so the exported default (3.0 s) always won and the .tres
+## value (1.5 s) was silently dead (§1.3: tuning lives in data, not in the
+## export default). Autoloads start before MatchManager publishes &"config",
+## so this is also deferred to the first idle frame.
+func _refresh_from_config() -> void:
+	call_deferred("_apply_config_cooldown")
+
+
+func _apply_config_cooldown() -> void:
+	var cfg: Object = GameServices.lookup(&"config")
+	if cfg == null or not (cfg is GameConfig):
+		return
+	var value: Variant = (cfg as GameConfig).get("minigame_cooldown_s")
+	if value is float or value is int:
+		cooldown_s = float(value)
 
 
 ## The director must sweep a running micro-game when the match ends.

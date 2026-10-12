@@ -79,9 +79,23 @@ func test_main_hosts_the_world_rig() -> void:
 	var main := await _instantiate_main()
 	if main == null:
 		return
-	assert_not_null(main.get_node_or_null("World/WorldEnvironment"), "environment present")
-	assert_not_null(main.get_node_or_null("World/DirectionalLight3D"), "sun present")
-	assert_not_null(main.get_node_or_null("World/Camera3D"), "camera present")
+	# Matched by type, not by node name: the scene's node names are unstable
+	# placeholders, and a name-based lookup silently found nothing.
+	assert_not_null(_first_of_type(main, "WorldEnvironment"), "environment present")
+	assert_not_null(_first_of_type(main, "DirectionalLight3D"), "sun present")
+	assert_not_null(_first_of_type(main, "Camera3D"), "camera present")
+
+
+## Depth-first search for the first node of a given class under `root`.
+func _first_of_type(root: Node, type_name: String) -> Node:
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n.is_class(type_name):
+			return n
+		for c in n.get_children():
+			stack.append(c)
+	return null
 
 
 func test_effects_layer_sits_above_the_hud() -> void:
