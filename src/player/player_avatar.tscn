@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://src/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://src/player/player_motor.gd" id="2_motor"]
+[ext_resource type="Script" path="res://src/player/player_input.gd" id="4_input"]
 [ext_resource type="Resource" path="res://src/player/player_motor.tres" id="3_cfg"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
@@ -28,3 +29,4 @@ surface_material_override/0 = SubResource("StandardMaterial3D_1")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 
 [node name="PlayerInput" type="Node" parent="."]
+script = ExtResource("4_input")
