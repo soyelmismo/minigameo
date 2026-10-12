@@ -66,10 +66,18 @@ func impact(weight: int) -> void:
 func impact_frame(frame: ImpactFrame) -> void:
 	if frame == null:
 		return
+	var was_armed: bool = _hitstop_left > 0.0 or _restore_left > 0.0
 	_active = frame
 	# Hitstop: freeze the world briefly.
 	_hitstop_left = frame.hitstop_s
-	_time_scale_restore = Engine.time_scale
+	# Only sample the restore value when NO hitstop was armed. Sampling it
+	# unconditionally means a second impact in the same frame reads the
+	# ALREADY-SLOWED 0.05 and every later restore writes back 0.05, leaving the
+	# world in 20x slow motion for the rest of the match. GameLoop advances the
+	# minigames before this director, so a self-finishing micro-game that also
+	# fires an impact hits exactly this stack.
+	if not was_armed:
+		_time_scale_restore = Engine.time_scale
 	Engine.time_scale = maxf(frame.time_scale, 0.01)
 	_restore_left = frame.hitstop_s
 	# A grace window so a slow normal advance() is not preempted by the

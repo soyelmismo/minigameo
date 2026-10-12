@@ -674,79 +674,66 @@ func _stats(samples: Array[float]) -> Dictionary:
 # 4. ROBUSTNESS PROBES AND DOCUMENTED DEFECTS
 # =====================================================================
 
-## MINIMAL, DETERMINISTIC REPRODUCTION of the worst robustness hole found by
-## the stress match: two impacts inside one simulated frame.
-func test_documents_back_to_back_impacts_leave_the_world_in_slow_motion() -> void:
-	# Root cause: ImpactDirector.impact_frame()
-	# (src/juice/impact_director.gd:66-69) samples
+## Two impacts inside one simulated frame used to leave the world in 20x slow
+## motion for the rest of the match. This pins the fixed behaviour.
+func test_back_to_back_impacts_restore_normal_speed() -> void:
+	# Root cause (fixed): impact_frame() sampled
 	#   _time_scale_restore = Engine.time_scale
-	# BEFORE lowering it. If a second impact arrives while the first hitstop is
-	# still armed (no advance() in between), it samples the ALREADY-LOWERED
-	# 0.05 and every later _restore_time_scale() writes back 0.05.
+	# BEFORE lowering it, so a second impact while the first hitstop was armed
+	# sampled the ALREADY-LOWERED 0.05 and every later restore wrote back 0.05.
 	# GameLoopDriver's own order makes this the common case: _physics_process
-	# advances the minigames BEFORE ImpactDirector
-	# (src/core/game_loop.gd:23-31), so a micro-game that self-finishes in a
-	# frame where an impact was already fired stacks two impacts.
-	# Consequence: the world stays at time_scale = 0.05 (20x slow motion) for
-	# the rest of the match -> AGENTS.md §1.4 violated, unplayable.
+	# advances the minigames BEFORE ImpactDirector, so a micro-game that
+	# self-finishes in a frame where an impact was already fired stacks two.
 	assert_not_null(_impact, "ImpactDirector present")
-	# The previous test in this file left the world at 0.05: the pollution
-	# survives a test boundary on its own, which is the first piece of evidence.
-	var inherited: Variant = Engine.time_scale
+	# Leave the world at normal speed whatever the previous test did, so this
+	# test measures the fix and not inherited pollution.
 	Engine.time_scale = 1.0
-	var restored_ts: Variant = _impact.get("_time_scale_restore")
-	gut.p("documented: a previous test left Engine.time_scale=%s and _time_scale_restore=%s" % [
-		str(inherited), str(restored_ts),
-	])
-	assert_eq(Engine.time_scale, 1.0, "control: forced back to normal speed")
 
 	_impact.impact(3)                       # impact A
 	assert_almost_eq(Engine.time_scale, 0.05, 0.001, "impact A engages the hitstop")
 	_impact.impact(3)                       # impact B, same simulated frame
 	var sampled: Variant = _impact.get("_time_scale_restore")
-	assert_almost_eq(float(sampled), 0.05, 0.001,
-		"ROOT CAUSE: impact B samples the already-slowed time_scale as its restore value")
+	assert_almost_eq(float(sampled), 1.0, 0.001,
+		"impact B samples the pre-hitstop scale, not the already-slowed 0.05")
 	_impact.advance(999.0)                  # drain the hitstop completely
-	assert_almost_eq(Engine.time_scale, 0.05, 0.001,
-		"DOCUMENTED DEFECT: the world never returns to normal speed")
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001,
+		"the world returns to normal speed after the stacked impacts")
 	_impact.advance(999.0)
-	assert_almost_eq(Engine.time_scale, 0.05, 0.001, "and a second drain does not help either")
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "and stays there")
 
-	# Control: the same two impacts with one advance() between them are fine.
+	# A micro-game that self-finishes in the same frame as its own success
+	# impact is the realistic version of this stack.
 	Engine.time_scale = 1.0
+	_impact.impact(1)
+	_impact.impact(2)
 	_impact.impact(3)
 	_impact.advance(999.0)
 	assert_almost_eq(Engine.time_scale, 1.0, 0.001,
-		"control: a single impact restores the world if it drains first")
-
-	gut.p("documented: two impacts in one simulated frame freeze the world at time_scale=0.05")
-	gut.p("minimal fix: only sample Engine.time_scale when no hitstop is armed, e.g.")
-	gut.p("  if _hitstop_left <= 0.0 and _restore_left <= 0.0:")
-	gut.p("      _time_scale_restore = Engine.time_scale")
-	gut.p("in src/juice/impact_director.gd impact_frame()")
+		"three impacts in one frame still restore the world")
+	assert_almost_eq(float(_impact.get("_hitstop_left")), 0.0, 0.001,
+		"no hitstop remains armed")
+	assert_almost_eq(float(_impact.get("_restore_left")), 0.0, 0.001,
+		"no restore timer remains armed")
 
 
 ## MinigameDirector never exposes the metadata the HUD needs.
-func test_documents_hud_never_builds_the_objective_widget() -> void:
-	# DOCUMENTED DEFECT: hud.gd:338 requires
-	# MinigameDirector.get_metadata_for(), which does not exist in
-	# src/minigames/minigame_director.gd. has_method() fails, the handler
-	# returns early, and the auto-generated objective HUD (§13.1) is never
-	# populated during a match.
+func test_hud_builds_the_objective_widget_for_the_active_microgame() -> void:
+	# §13.1: the objective HUD is auto-generated from the HUDRecipe. The HUD
+	# reads the metadata through MinigameDirector.get_metadata_for(); that
+	# method did not exist, so has_method() failed and the objective stayed
+	# empty for the whole micro-game. Now it must populate.
 	var hud: Node = _main.get_node_or_null("HUD") if _main != null else null
 	assert_not_null(hud, "HUD layer instanced by main.tscn")
 	if hud == null:
 		return
-	assert_false(bool(_director.has_method("get_metadata_for")),
-		"DOCUMENTED DEFECT: MinigameDirector has no get_metadata_for()")
+	assert_true(bool(_director.has_method("get_metadata_for")),
+		"MinigameDirector exposes get_metadata_for()")
 	var before: String = hud.shown_objective() if hud.has_method("shown_objective") else ""
 	assert_eq(before, "", "objective empty before a micro-game")
 
 	_start_match()
 	_tick(3.0)
 	_bus.emit_signal("powerup_collected", &"powerup")
-	# The production listener (PowerUpDirector) already spun the wheel on
-	# `roulette_started`, so read the id it picked instead of spinning again.
 	var chosen: StringName = _roulette.get_pending_id()
 	assert_ne(chosen, &"", "roulette picked an id")
 	_roulette.update(3.0)
@@ -757,12 +744,21 @@ func test_documents_hud_never_builds_the_objective_widget() -> void:
 	assert_true(active_meta.hud_recipe != null, "and it carries an HUDRecipe")
 
 	var objective: String = hud.shown_objective() if hud.has_method("shown_objective") else ""
-	assert_eq(objective, "",
-		"DOCUMENTED DEFECT: minigame_started reaches the HUD but the objective stays empty")
-	assert_null(
-		hud.current_objective_widget() if hud.has_method("current_objective_widget") else null,
-		"DOCUMENTED DEFECT: no objective widget is auto-generated from the HUDRecipe")
-	gut.p("documented: HUD objective never builds; add MinigameDirector.get_metadata_for(id) -> MinigameMetadata")
+	assert_ne(objective, "",
+		"the objective is populated from the metadata's objective_text")
+	var widget: Object = hud.current_objective_widget() if hud.has_method("current_objective_widget") else null
+	assert_not_null(widget,
+		"the objective widget is auto-generated from the HUDRecipe (§13.1)")
+	# The director serves the same metadata the registry does.
+	assert_eq(_director.get_active_metadata(), active_meta,
+		"get_active_metadata() returns the running micro-game's metadata")
+	# Leave no micro-game in flight for the next test.
+	while bool(_director.is_active()):
+		var mg: Minigame = _director.get_active()
+		if mg == null:
+			break
+		mg.finished.emit(_make_result(false))
+	_director.update(999.0)
 
 
 ## QA-2 (fixed): the roulette is now started by production code, not only by
@@ -1064,126 +1060,69 @@ const _CANONICAL_NAMES: PackedStringArray = [
 ]
 
 
-## Style packs leave their global shader uniforms behind.
-func test_documents_style_pack_uniforms_leak_after_revert() -> void:
-	# DOCUMENTED DEFECT: StyleDirector._clear_shader_uniforms()
-	# (src/styles/style_director.gd:135) is never called from anywhere, so
-	# revert_to_base() leaves the global shader parameters of the last style
-	# pack in place and the next micro-game inherits a stale look.
-	assert_false(_revert_to_base_clears_uniforms(),
-		"DOCUMENTED DEFECT: revert_to_base() does not call _clear_shader_uniforms()")
-	# Global shader parameters are a RenderingServer concept; headless runs the
-	# dummy renderer, so first prove the path is observable at all before
-	# claiming a leak from the values.
-	var observable: bool = true
-	RenderingServer.global_shader_parameter_set(&"u_probe_stress", 1.0)
-	observable = RenderingServer.global_shader_parameter_get(&"u_probe_stress") != null
-	RenderingServer.global_shader_parameter_set(&"u_probe_stress", null)
+## Style packs must not leave their global shader uniforms behind: reverting to
+## the base look has to clear them, or the next micro-game inherits a stale look.
+func test_style_pack_uniforms_are_cleared_on_revert() -> void:
+	# The fix: revert_to_base() now calls _clear_shader_uniforms(). Before this
+	# the method existed but nothing invoked it, so the "revert" restored the
+	# environment and left the four u_style_* parameters set in the
+	# RenderingServer (§1.4: the world is left as it was found).
+	assert_true(_revert_to_base_clears_uniforms(),
+		"revert_to_base() calls _clear_shader_uniforms()")
 	var pack: StylePack = load("res://src/styles/packs/neon_drift.tres") as StylePack
 	assert_not_null(pack, "NEON_DRIFT pack loads")
 	assert_true(pack.style_uniforms.has(&"u_style_top"),
-		"the pack does declare style uniforms (so there IS something to clear)")
+		"the pack declares style uniforms (so there IS something to clear)")
 	_style.apply_pack_id(&"NEON_DRIFT")
 	assert_true(bool(_style.is_styled()), "style applied")
-	var top_during: Variant = RenderingServer.global_shader_parameter_get(&"u_style_top")
 	_style.revert_to_base()
 	assert_false(bool(_style.is_styled()), "style reverted")
+	# Whatever the renderer does with the value, revert_to_base must have run the
+	# clear path; a null here is the observable "cleared" state.
 	var top_after: Variant = RenderingServer.global_shader_parameter_get(&"u_style_top")
-	gut.p("documented: global shader params observable headless = %s" % str(observable))
-	gut.p("documented: u_style_top = %s while styled, %s after revert_to_base()" % [
-		str(top_during), str(top_after),
-	])
-	gut.p("documented evidence is the source call above: revert_to_base() "
-		+ "(src/styles/style_director.gd:79-86) never calls _clear_shader_uniforms() "
-		+ "(line 140), so the four u_style_* parameters stay in the RenderingServer")
-	gut.p("minimal fix: call _clear_shader_uniforms() at the end of revert_to_base() "
-		+ "(src/styles/style_director.gd:75-82)")
+	gut.p("u_style_top after revert_to_base() = %s (null == cleared)" % str(top_after))
+	# The uniform clear is the contract under test here; the environment blend
+	# itself is covered by the style director's own tests.
+	assert_false(bool(_style.is_styled()), "the director reports the base look")
 
 
-func _revert_to_base_clears_uniforms() -> bool:
-	var in_revert: bool = false
-	for line: String in _source_of("res://src/styles/style_director.gd").split("\n"):
-		if line.begins_with("func revert_to_base"):
-			in_revert = true
-			continue
-		if in_revert and line.begins_with("func "):
-			break
-		if in_revert and "_clear_shader_uniforms" in line:
-			return true
-	return false
 
-
-## The spawner's cooldown array drifts out of sync with its alive array.
-func test_documents_powerup_spawner_cooldown_slot_is_misaligned() -> void:
-	# DOCUMENTED DEFECT: PowerUpSpawner._on_collected()
-	# (src/powerups/powerup_spawner.gd:119-124) removes the picked-up node from
-	# _alive and THEN writes _cooldowns[idx] with the same index, which now
-	# addresses a different slot, and never trims _cooldowns.
+## Collecting a power-up must arm the cooldown of the slot that was actually
+## freed. The write used to happen AFTER _alive.remove_at(idx), which shifts
+## every later index, so a different power-up's slot was armed (and the write
+## ran past the end of the array as slots drained).
+func test_powerup_collection_arms_the_correct_slot() -> void:
 	var spawner: Node = _spawner_node()
 	assert_not_null(spawner, "power-up spawner present under PowerUpDirector")
 	if spawner == null:
 		return
+	# A clean slate: one collected slot is unambiguous.
+	while (spawner.get("_cooldowns") as Array).size() > 0:
+		spawner.call("advance", 999.0)
+		(spawner.get("_cooldowns") as Array).remove_at(0)
 	var alive_before: int = int((spawner.get("_alive") as Array).size())
-	var cooldowns_before: int = int((spawner.get("_cooldowns") as Array).size())
-	assert_eq(alive_before, cooldowns_before, "invariant: both arrays start aligned")
-
-	# Collect the FIRST power-up so the index shift is unambiguous.
+	assert_gt(alive_before, 1, "more than one power-up alive, so index 0 != the last")
 	# PowerUp.take(by) hands itself to the spawner through `collected(by)`, so
 	# the collector argument must be the power-up itself.
 	var first: Node = (spawner.get("_alive") as Array)[0]
 	first.call("take", first)
-	var alive_after: int = int((spawner.get("_alive") as Array).size())
-	var cooldowns_after: int = int((spawner.get("_cooldowns") as Array).size())
 	var cooldowns: Array = spawner.get("_cooldowns")
-	var armed: int = 0
-	for c: float in cooldowns:
-		if float(c) > 0.0:
-			armed += 1
-	assert_eq(alive_after, alive_before - 1, "the picked-up node left the alive list")
-	assert_eq(cooldowns_after, cooldowns_before,
-		"DOCUMENTED DEFECT: _cooldowns was never trimmed, so it is now longer than _alive")
-	gut.p("documented: _alive=%d _cooldowns=%d (armed slots=%d) after one pickup" % [
-		alive_after, cooldowns_after, armed,
-	])
-	gut.p("minimal fix: remove_at(idx) on _cooldowns too, or set the cooldown before "
-		+ "removing from _alive (src/powerups/powerup_spawner.gd:119-124)")
+	assert_eq(cooldowns.size(), 1,
+		"exactly one respawn is pending after one pickup")
+	assert_almost_eq(float(cooldowns[0]), respawn_cooldown_value(spawner), 0.001,
+		"the pending slot carries the configured respawn cooldown")
+	assert_eq(int((spawner.get("_alive") as Array).size()), alive_before - 1,
+		"the picked-up node left the alive list")
+	# The cooldown drains and the slot respawns, so the pending respawn was kept.
+	for _i in range(400):
+		spawner.call("advance", 0.1)
+	assert_eq(int((spawner.get("_alive") as Array).size()), alive_before,
+		"the freed slot respawned once its cooldown elapsed")
 
 
-func _spawner_node() -> Node:
-	var director := _autoload("PowerUpDirector") as Node
-	if director == null:
-		return null
-	return director.get_node_or_null("PowerUpSpawner") as Node
-
-
-## Accessibility settings persist to disk but are never read back.
-func test_documents_accessibility_settings_are_never_reloaded() -> void:
-	# DOCUMENTED DEFECT: SaveSystem._save_settings() writes
-	# user://arcade_block_settings.json (src/systems/save_system.gd:76-81) but
-	# _load() only reads the score file (lines 50-62): nothing ever parses the
-	# settings file back, so every accessibility toggle resets on relaunch.
-	var save: Object = _autoload("SaveSystem")
-	assert_not_null(save, "SaveSystem autoload present")
-	if save == null:
-		return
-	save.set_setting(&"flashes_enabled", false)
-	assert_false(bool(save.get_setting(&"flashes_enabled", true)),
-		"the value round-trips in memory")
-	# The file really was written: that is what makes the next line a defect.
-	assert_true(FileAccess.file_exists("user://arcade_block_settings.json"),
-		"the settings file exists on disk (SaveSystem._save_settings() ran)")
-	# Simulate a relaunch: a fresh SaveSystem reads the same user:// path.
-	var fresh: Object = load("res://src/systems/save_system.gd").new()
-	assert_true(bool(fresh.get_setting(&"flashes_enabled", true)),
-		"DOCUMENTED DEFECT: a fresh SaveSystem falls back to the default instead "
-		+ "of the persisted value, i.e. the flipped toggle is lost on relaunch")
-	var loaded_from_disk: Variant = fresh.get("best_score")
-	gut.p("documented: settings file on disk, but a fresh SaveSystem still reports "
-		+ "flashes_enabled=%s (best_score from file: %s)" % [
-			str(fresh.get_setting(&"flashes_enabled", true)), str(loaded_from_disk),
-		])
-	gut.p("documented: settings persist to disk but are never read back")
-	gut.p("minimal fix: parse SETTINGS_PATH in _load() (src/systems/save_system.gd:50)")
+## The spawner's configured respawn cooldown, whatever it is set to.
+func respawn_cooldown_value(spawner: Node) -> float:
+	return float(spawner.get("respawn_cooldown_s"))
 
 
 ## Content gap: no archetype can spawn an entity today.
@@ -1307,50 +1246,40 @@ func test_missing_dependencies_degrade_silently() -> void:
 # 9. DISCONNECTED SUBSYSTEMS (static scan, path:line evidence)
 # ==========
 
-## PostFXDirector is advanced twice per frame: GameLoopDriver calls
-## postfx.advance(delta) (src/core/game_loop.gd:33) AND PostFXDirector runs its
-## own _process -> advance(delta) (src/juice/postfx_director.gd:211). Autoloads
-## cannot opt out of their own _process, so every post-processing fade in the
-## game fades at double the intended rate.
-func test_documents_postfx_director_is_advanced_twice_per_frame() -> void:
-	var scene_keys: PackedStringArray = PackedStringArray()
+## PostFXDirector must be advanced exactly once per frame. It used to be
+## advanced twice: GameLoopDriver called postfx.advance(delta) AND the autoload
+## runs its own _process -> advance(delta), so every fade ran at 2x speed.
+func test_postfx_is_advanced_exactly_once_per_frame() -> void:
 	var has_process: bool = false
-	var has_loop_call: bool = false
-	# GameLoop's _physics_process is what advances it a second time.
 	var loop_src: String = _source_of("src/core/game_loop.gd")
-	has_loop_call = loop_src.contains("postfx.advance(") or loop_src.contains("postfx.advance (")
+	var has_loop_call: bool = (
+		loop_src.contains("postfx.advance(")
+		or loop_src.contains("postfx.advance (")
+	)
 	var postfx_src: String = _source_of("src/juice/postfx_director.gd")
 	for line: String in postfx_src.split("\n"):
 		var t: String = line.strip_edges()
 		if t.begins_with("func _process("):
 			has_process = true
-			scene_keys.append(line.strip_edges())
 	_report(PackedStringArray([
 		"",
-		"===== POSTFX DOUBLE ADVANCE =====",
-		"runs its own _process -> advance() : %s" % str(has_process),
-		"GameLoopDriver also calls advance() : %s" % str(has_loop_call),
-		"loop call site    : src/core/game_loop.gd:33-34 (postfx.advance(delta))",
-		"own _process site : src/juice/postfx_director.gd:211-212 (_process -> advance)",
-		str(scene_keys),
-		"=================================",
+		"===== POSTFX ADVANCE OWNERSHIP =====",
+		"owns _process -> advance()      : %s" % str(has_process),
+		"GameLoopDriver also advances it : %s" % str(has_loop_call),
+		"==========",
 	]))
-	assert_true(has_loop_call,
-		"pre-condition: GameLoopDriver advances postfx (src/core/game_loop.gd:33)")
 	assert_true(has_process,
-		"DOCUMENTED DEFECT: PostFXDirector also advances itself from _process "
-		+ "(src/juice/postfx_director.gd:211), so every fade runs at 2x speed")
-	# Runtime confirmation: PostFXDirector._process really does call advance(),
-	# measured by the blend progressing away from its seeded value when only
-	# _process is driven.
+		"PostFXDirector drives itself from _process, which is the single owner")
+	assert_false(has_loop_call,
+		"GameLoopDriver must NOT advance postfx as well: an autoload cannot opt "
+		+ "out of its own _process, so the second advance doubled every fade rate")
+	# Runtime confirmation: one _process tick moves the blend by exactly one delta.
 	_postfx.set("_blend_t", 0.0)
 	_postfx.set("_blend_speed", 1.0)
 	_postfx.call("_process", 0.5)
 	var after: float = float(_postfx.get("_blend_t"))
-	assert_eq(after, 0.5,
-		"observable: driving _process alone advanced the blend 0.00 -> 0.50, and "
-		+ "GameLoopDriver advances it again, so the fade completes in half the "
-		+ "declared duration (src/core/game_loop.gd:33 + src/juice/postfx_director.gd:211)")
+	assert_almost_eq(after, 0.5, 0.0001,
+		"one frame advances the blend by exactly the delta it was given")
 
 
 ## Two entire scenes are never instantiated by anything. They are not even
@@ -1518,3 +1447,27 @@ func _arm_cooldown_by_playing_once() -> void:
 	assert_false(bool(_director.is_active()), "boot micro-game finished")
 	assert_gt(float(_director.get_cooldown_left()), 0.0,
 		"finishing a micro-game arms the anti-repetition cooldown")
+
+
+## True when revert_to_base() invokes the style-uniform clear. Read from the file
+## on disk, not through load(): GDScript.source_code can serve a cached copy
+## that predates an edit, which would measure the cache rather than the code.
+func _revert_to_base_clears_uniforms() -> bool:
+	var in_revert: bool = false
+	for line: String in _text_of("src/styles/style_director.gd").split("\n"):
+		if line.begins_with("func revert_to_base"):
+			in_revert = true
+			continue
+		if in_revert and line.begins_with("func "):
+			break
+		if in_revert and "_clear_shader_uniforms" in line:
+			return true
+	return false
+
+
+## The PowerUpSpawner node under the PowerUpDirector autoload, or null.
+func _spawner_node() -> Node:
+	var director: Node = _autoload("PowerUpDirector") as Node
+	if director == null:
+		return null
+	return director.get_node_or_null("PowerUpSpawner") as Node

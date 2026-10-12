@@ -29,9 +29,11 @@ func _physics_process(delta: float) -> void:
 	var impact: Object = _resolve(&"ImpactDirector")
 	if impact != null and impact.has_method("advance"):
 		impact.advance(delta)
-	var postfx: Object = _resolve(&"PostFXDirector")
-	if postfx != null and postfx.has_method("advance"):
-		postfx.advance(delta)
+	# PostFXDirector is deliberately NOT advanced here: it is an autoload and
+	# runs its own _process -> advance(delta), and an autoload cannot opt out of
+	# that. Advancing it here as well made every post-processing fade run at
+	# double the intended rate (the postfx blend was consumed twice per frame).
+	# If PostFX ever loses its _process, this is where it must come back.
 
 
 func _unhandled_input(event: InputEvent) -> void:

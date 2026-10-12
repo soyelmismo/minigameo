@@ -164,8 +164,15 @@ func _tick_proximity() -> void:
 func _on_collected(_by: Node) -> void:
 	var idx: int = _alive.find(_by)
 	if idx >= 0:
-		_alive.remove_at(idx)
+		# Write the cooldown BEFORE removing from _alive: remove_at() shifts every
+		# later index, so writing afterwards would arm a DIFFERENT power-up's
+		# slot (and run past the end of the array as slots drain).
+		#
+		# _cooldowns is not an index-parallel mirror of _alive: it is the list of
+		# pending respawns, and _fill_from_cooldowns() consumes one slot each
+		# time it respawns. Trimming it here would discard the pending respawn.
 		_cooldowns[idx] = respawn_cooldown_s
+		_alive.remove_at(idx)
 	_emit(&"powerup_collected", [&"powerup"])
 
 

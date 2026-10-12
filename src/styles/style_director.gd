@@ -77,6 +77,12 @@ func apply_pack(pack: StylePack) -> void:
 
 ## Revert to the captured base look.
 func revert_to_base() -> void:
+	# Drop the global style uniforms BEFORE the blend, so the world does not
+	# carry the last pack's saturation/scanline look into the next micro-game.
+	# This call existed but nothing invoked it, so the "revert" only restored
+	# the environment and left every shader uniform behind (§1.4: the world is
+	# left as it was found).
+	_clear_shader_uniforms()
 	_to_env = _base_environment.duplicate()
 	_from_env = _snapshot_env()
 	_blend_t = 0.0

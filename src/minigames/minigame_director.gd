@@ -94,6 +94,26 @@ func _ensure_registry() -> void:
 	_registry.ensure_scanned()
 
 
+## Metadata for a catalog id, or null. The HUD builds its objective widget
+## from this (scaffold §13.1: all objective UI is auto-generated from the
+## HUDRecipe, zero ad-hoc widgets). Without this the HUD silently rendered
+## nothing during a micro-game.
+func get_metadata_for(id: StringName) -> MinigameMetadata:
+	if _registry == null:
+		_ensure_registry()
+	if _registry == null:
+		return null
+	return _registry.get_metadata(id)
+
+
+## Metadata of the micro-game currently running, or null. Convenience for
+## consumers that do not track the active id themselves.
+func get_active_metadata() -> MinigameMetadata:
+	if not is_active():
+		return null
+	return get_metadata_for(_active_id)
+
+
 ## Verdadero si hay un micro-juego en curso.
 func is_active() -> bool:
 	return _active != null and is_instance_valid(_active)
