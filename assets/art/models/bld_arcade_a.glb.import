@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://8ftrgjir2rvv"
-path="res://.godot/imported/building_a.glb-eef8237e71b114eedc14408fa24fb653.scn"
+uid="uid://cfek2t4wf3j67"
+path="res://.godot/imported/bld_arcade_a.glb-9223faebc65f29423ddf8685e87799af.scn"
 
 [deps]
 
-source_file="res://assets/art/models/building_a.glb"
-dest_files=["res://.godot/imported/building_a.glb-eef8237e71b114eedc14408fa24fb653.scn"]
+source_file="res://assets/art/models/bld_arcade_a.glb"
+dest_files=["res://.godot/imported/bld_arcade_a.glb-9223faebc65f29423ddf8685e87799af.scn"]
 
 [params]
 

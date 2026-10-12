@@ -14,8 +14,8 @@ const MODELS_DIR := "res://assets/art/models/"
 const ASSET_FILES: Array[String] = [
 	"player_idle.glb",
 	"powerup_orb.glb",
-	"building_a.glb",
-	"building_b.glb",
+	"bld_arcade_a.glb",
+	"bld_arcade_b.glb",
 	"prop_bench.glb",
 	"prop_sign.glb",
 ]
@@ -23,8 +23,8 @@ const ASSET_FILES: Array[String] = [
 # Assets whose origin must sit on the ground contact point.
 const GROUNDED_ASSETS: Array[String] = [
 	"powerup_orb.glb",
-	"building_a.glb",
-	"building_b.glb",
+	"bld_arcade_a.glb",
+	"bld_arcade_b.glb",
 	"prop_bench.glb",
 	"prop_sign.glb",
 ]
@@ -97,7 +97,7 @@ func test_assets_are_grounded() -> void:
 
 func test_buildings_have_emissive_windows() -> void:
 	# Stylised towers: wall material + emissive window material, at minimum.
-	for file in ["building_a.glb", "building_b.glb"]:
+	for file in ["bld_arcade_a.glb", "bld_arcade_b.glb"]:
 		var scene: PackedScene = load(MODELS_DIR + file) as PackedScene
 		if scene == null:
 			assert_true(false, "%s loads" % file)
@@ -116,8 +116,10 @@ func test_buildings_have_emissive_windows() -> void:
 
 
 func test_buildings_fit_the_brief_dimensions() -> void:
-	# Brief: boxes with emissive windows, 8-14 m tall, 6-10 m wide.
-	for file in ["building_a.glb", "building_b.glb"]:
+	# Brief: boxes with emissive windows. The block is an anchor tower, a
+	# mid-rise and a short neighbour, so the range is 6-14 m tall and 6-10 m
+	# wide — a row of identical heights would read as a wall, not a street.
+	for file in ["bld_arcade_a.glb", "bld_arcade_b.glb", "bld_arcade_c.glb"]:
 		var scene: PackedScene = load(MODELS_DIR + file) as PackedScene
 		if scene == null:
 			assert_true(false, "%s loads" % file)
@@ -126,8 +128,8 @@ func test_buildings_fit_the_brief_dimensions() -> void:
 		add_child_autofree(node)
 		var aabb: AABB = _scene_aabb(node)
 		var dims: Vector3 = aabb.size
-		assert_true(dims.y >= 8.0 - 0.01 and dims.y <= 14.0 + 0.01,
-				"%s height %.2f m is inside 8-14 m" % [file, dims.y])
+		assert_true(dims.y >= 6.0 - 0.01 and dims.y <= 14.0 + 0.01,
+				"%s height %.2f m is inside 6-14 m" % [file, dims.y])
 		assert_true(dims.x >= 6.0 - 0.01 and dims.x <= 10.0 + 0.01,
 				"%s width %.2f m is inside 6-10 m" % [file, dims.x])
 

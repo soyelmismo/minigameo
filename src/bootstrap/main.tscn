@@ -16,9 +16,15 @@ script = ExtResource("main_gd")
 [node name="WorldEnvironment" type="WorldEnvironment" parent="World"]
 environment = ExtResource("base_env")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="World"]
+[node name="David Jenkinst3D" type="DirectionalLight3D" parent="World"]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 8, 12, 6)
 shadow_enabled = true
+# Two shadow cascades instead of the default four. Every caster is re-drawn once
+# per cascade, and the city's buildings are the only casters worth paying for,
+# so four cascades cost ~250 draw calls to shadow geometry the player never
+# looks at closely. Two cascades keep the contact shadows where the camera is.
+directional_shadow_mode = 1
+directional_shadow_max_distance = 90.0
 
 [node name="CityBlock" parent="World" instance=ExtResource("city_block_tscn")]
 

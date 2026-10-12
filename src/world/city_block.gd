@@ -70,9 +70,175 @@ func _ready() -> void:
 	var rng: Object = SeededRNGScript.new()
 	rng.seed(gen_seed)
 	_build_ground()
+	_build_building_art(rng)
 	_build_buildings(rng)
 	_build_props()
 	_build_spawns()
+
+
+# --- Final art (scaffold §11: the greyblock's primitives are replaced here) ---
+
+const BUILDING_ART := [
+	"res://assets/art/models/bld_arcade_a.glb",
+	"res://assets/art/models/bld_arcade_b.glb",
+	"res://assets/art/models/bld_arcade_c.glb",
+]
+
+const PROP_ART := [
+	"res://assets/art/models/prop_bench.glb",
+	"res://assets/art/models/prop_sign.glb",
+	"res://assets/art/models/prop_planter.glb",
+	"res://assets/art/models/prop_kiosk.glb",
+]
+
+
+## Merges every part of an art asset that shares a material into ONE surface.
+##
+## Safe without transform maths because gen_glb.py bakes every transform into
+## the vertices, so no part node carries one — the parts are already in the
+## asset's own frame, base at the origin (scaffold §11).
+##
+## The concatenation matters: a MultiMesh whose mesh has N surfaces costs N draw
+## calls, so leaving one surface per part made an 11-part building cost 11 calls
+## and pushed the whole block past the 400 budget in scaffold §15. One surface
+## per material makes a whole building type cost as many calls as it has
+## materials.
+func _art_merge(path: String) -> Dictionary:
+	var ps := load(path) as PackedScene
+	var out := {}
+	if ps == null:
+		return out
+	var inst := ps.instantiate()
+	var by_mat := {}
+	var stack: Array[Node] = [inst]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is MeshInstance3D:
+			var mi := n as MeshInstance3D
+			if mi.mesh != null:
+				for s in mi.mesh.get_surface_count():
+					var mat: Material = mi.mesh.surface_get_material(s)
+					if not by_mat.has(mat):
+						by_mat[mat] = []
+					by_mat[mat].append(mi.mesh.surface_get_arrays(s))
+		for c in n.get_children():
+			stack.append(c)
+	inst.free()
+	for mat: Material in by_mat:
+		var merged := ArrayMesh.new()
+		var arrays := _concat_surfaces(by_mat[mat])
+		merged.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		out[mat] = merged
+	return out
+
+
+## Concatenates several surface arrays into one, rebasing the indices.
+func _concat_surfaces(parts: Array) -> Array:
+	var positions := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for part: Array in parts:
+		var base: int = positions.size()
+		for v: Vector3 in part[Mesh.ARRAY_VERTEX]:
+			positions.append(v)
+		if part[Mesh.ARRAY_NORMAL] != null and not part[Mesh.ARRAY_NORMAL].is_empty():
+			for v: Vector3 in part[Mesh.ARRAY_NORMAL]:
+				normals.append(v)
+		var idx: PackedInt32Array = part[Mesh.ARRAY_INDEX]
+		if idx != null and not idx.is_empty():
+			for i: int in idx:
+				indices.append(i + base)
+	var combined := []
+	combined.resize(Mesh.ARRAY_MAX)
+	combined[Mesh.ARRAY_VERTEX] = positions
+	if normals.size() == positions.size():
+		combined[Mesh.ARRAY_NORMAL] = normals
+	combined[Mesh.ARRAY_INDEX] = indices
+	return combined
+
+
+## Places one asset many times through a single MultiMesh per material.
+func _art_instances(parent: Node, path: String, xforms: Array[Transform3D],
+		node_name: String) -> void:
+	if xforms.is_empty():
+		return
+	var meshes := _art_merge(path)
+	for mat: Material in meshes:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = meshes[mat]
+		mm.instance_count = xforms.size()
+		for j in xforms.size():
+			mm.set_instance_transform(j, xforms[j])
+		var node := MultiMeshInstance3D.new()
+		node.multimesh = mm
+		# No art casts shadows, and that is a measured decision, not an
+		# oversight. Every caster is re-drawn once per shadow cascade: with the
+		# whole building casting, the block hit ~510 draw calls against the 400
+		# budget in scaffold §15; with only the concrete mass casting, 463. The
+		# art alone with no casters is 267, which leaves 133 of headroom for the
+		# micro-game entities and keeps the stress run at a locked 60 fps.
+		# The dusk environment's sky ambient, the emissive windows and the neon
+		# carry the form instead, which is what an arcade camera actually shows.
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.name = "%s_%s" % [node_name, _mat_label(mat)]
+		parent.add_child(node)
+
+
+func _mat_label(mat: Material) -> String:
+	if mat == null:
+		return "nomaterial"
+	var nm: String = mat.resource_name
+	return nm if not nm.is_empty() else "mat"
+
+
+## Replaces the greybox building volumes with the final art (scaffold §11).
+## The ring layout, the sidewalks and the neon signs stay: only the solid mass
+## and its windows become real geometry.
+func _build_building_art(rng: Object) -> void:
+	var root := Node3D.new()
+	root.name = "BuildingArt"
+	add_child(root)
+
+	var half: float = block_size * 0.5 - 8.0
+	var ring: Array[Vector3] = [
+		Vector3(-half, 0, -half), Vector3(0, 0, -half), Vector3(half, 0, -half),
+		Vector3(-half, 0, 0), Vector3(half, 0, 0),
+		Vector3(-half, 0, half), Vector3(0, 0, half), Vector3(half, 0, half),
+	]
+	var by_asset := {}
+	for i in mini(building_count, ring.size()):
+		var path: String = BUILDING_ART[i % BUILDING_ART.size()]
+		var pos: Vector3 = ring[i]
+		# Deterministic yaw so the marquees do not all face the same way, and
+		# so a rerun with the same seed lays the block out identically (§7.2).
+		var yaw: float = rng.randf() * TAU
+		var xf := Transform3D(Basis.from_euler(Vector3(0, yaw, 0)),
+				Vector3(pos.x, 0.0, pos.z))
+		if not by_asset.has(path):
+			by_asset[path] = [] as Array[Transform3D]
+		by_asset[path].append(xf)
+	for path: String in by_asset:
+		_art_instances(root, path, by_asset[path], path.get_file().get_basename())
+
+	# Street furniture, so the block reads as a place rather than a floor.
+	var prop_root := Node3D.new()
+	prop_root.name = "PropArt"
+	add_child(prop_root)
+	var prop_xforms := {}
+	for i in 10:
+		var path: String = PROP_ART[i % PROP_ART.size()]
+		var angle: float = rng.randf() * TAU
+		var radius: float = block_size * 0.34 + rng.randf() * block_size * 0.1
+		var xf := Transform3D(
+				Basis.from_euler(Vector3(0, angle, 0)),
+				Vector3(cos(angle) * radius, 0.0, sin(angle) * radius))
+		if not prop_xforms.has(path):
+			prop_xforms[path] = [] as Array[Transform3D]
+		prop_xforms[path].append(xf)
+	for path: String in prop_xforms:
+		_art_instances(prop_root, path, prop_xforms[path],
+				path.get_file().get_basename())
 
 
 # --- Materials (shared: one material per look, reused by every instance) ---
@@ -224,6 +390,12 @@ class _BoxBatches:
 # --- Buildings ----------
 
 func _build_buildings(rng: Object) -> void:
+
+	# The solid mass and the window grids now come from _build_building_art() as
+	# real geometry (scaffold §11: the greyblock's primitives are replaced by
+	# the final art). What is left here is what the art cannot express: the
+	# sidewalk pads that ground each building, the neon strips that light the
+	# street, and the rooftop clutter that breaks the skyline.
 	var half: float = block_size * 0.5 - 8.0
 	var ring: Array[Vector3] = [
 		Vector3(-half, 0, -half), Vector3(0, 0, -half), Vector3(half, 0, -half),
@@ -234,53 +406,40 @@ func _build_buildings(rng: Object) -> void:
 	root.name = "Buildings"
 	add_child(root)
 
-	# Shared facade materials (4 variants reused across 8 buildings).
-	var mats: Array[StandardMaterial3D] = []
-	for i in BUILDINGS.size():
-		mats.append(_mat_building(i))
-
-	# Every building volume, sidewalk and rooftop box is batched here and drawn
-	# as one MultiMesh per material, instead of one MeshInstance3D each.
+	# One MultiMesh per material instead of one MeshInstance3D per box: the
+	# sidewalks, the neon strips and the rooftop clutter would otherwise cost a
+	# draw call each (scaffold \u00a715 budget: 400 total).
 	var batches := _BoxBatches.new()
-
-	var warm_mat := _mat_emissive(COLOR_WINDOW_WARM, 1.6)
-	var cool_mat := _mat_emissive(COLOR_WINDOW_COOL, 1.8)
-	var warm_xforms: Array[Transform3D] = []
-	var cool_xforms: Array[Transform3D] = []
-	var neon_mat := _mat_emissive(COLOR_NEON_CYAN, 2.4)
-	var neon_magenta := _mat_emissive(COLOR_NEON_MAGENTA, 2.4)
-	var neon_mesh := QuadMesh.new()
-	neon_mesh.size = Vector2(1.0, 1.0)
 
 	var sidewalk_mat := _mat_simple(COLOR_WALK, 0.9)
 	var clutter_mat := _mat_simple(Color(0.25, 0.26, 0.28), 0.8, 0.15)
 	var tank_mat := _mat_simple(Color(0.35, 0.3, 0.22), 0.7, 0.25)
+	var neon_a := _mat_emissive(COLOR_NEON_CYAN, 2.4)
+	var neon_b := _mat_emissive(COLOR_NEON_MAGENTA, 2.4)
 
 	for i in mini(building_count, ring.size()):
 		var spec: Array = BUILDINGS[i % BUILDINGS.size()]
 		var w: float = spec[0]
 		var d: float = spec[1]
-		var h: float = spec[2] * (0.9 + rng.randf() * 0.25)  # deterministic jitter
-		var mat_idx: int = spec[3]
 		var pos: Vector3 = ring[i]
 		var base: float = 0.3  # sidewalk pad top
 
 		# Sidewalk pad + curb read around the building foot.
-		_add_box(root, "Building_%d_Sidewalk" % i,
-			Vector3(w + 3.4, 0.3, d + 3.4), Vector3(pos.x, 0.15, pos.z), sidewalk_mat)
+		batches.add(Vector3(w + 3.4, 0.3, d + 3.4),
+				Vector3(pos.x, 0.15, pos.z), sidewalk_mat)
+		batches.add(Vector3(w + 3.9, 0.12, d + 3.9),
+				Vector3(pos.x, 0.32, pos.z), clutter_mat)
 
-		var bld := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(w, h, d)
-		bld.mesh = box
-		bld.material_override = mats[mat_idx]
-		bld.position = Vector3(pos.x, base + h * 0.5, pos.z)
-		bld.name = "Building_%d" % i
-		root.add_child(bld)
+		# Rooftop clutter, so the skyline is not a clean row of boxes.
+		if rng.randf() > 0.45:
+			batches.add(Vector3(1.2, 0.9, 1.2),
+					Vector3(pos.x + w * 0.22, base + 1.0, pos.z - d * 0.2), tank_mat)
+		if rng.randf() > 0.55:
+			batches.add(Vector3(0.9, 0.6, 0.9),
+					Vector3(pos.x - w * 0.25, base + 0.7, pos.z + d * 0.18), clutter_mat)
 
-		# Window grid on the faces that look at the play area (the far faces
-		# are never seen from inside the block: half the quads for free).
-		var faces: Array = []  # (axis: 0 = x-facing, 1 = z-facing, sign)
+		# Neon strip on the face that looks at the play area.
+		var faces: Array = []
 		if absf(pos.x) > 0.001:
 			faces.append([0, signf(pos.x)])
 		if absf(pos.z) > 0.001:
@@ -289,81 +448,27 @@ func _build_buildings(rng: Object) -> void:
 			var axis: int = face[0]
 			var sgn: float = face[1]
 			var span: float = d if axis == 0 else w
-			var cols: int = maxi(int(span / WINDOW_SPACING_X), 2)
-			var rows: int = maxi(int((h - 2.0) / WINDOW_SPACING_Y), 2)
-			var step: float = span / cols
-			for c in cols:
-				for r in rows:
-					if rng.randf() > WINDOW_LIT_CHANCE:
-						continue
-					var local: float = -span * 0.5 + (c + 0.5) * step
-					var y: float = base + 1.6 + r * WINDOW_SPACING_Y
-					var theta: float
-					var wp: Vector3
-					if axis == 0:
-						theta = (-PI * 0.5) if sgn > 0.0 else PI * 0.5
-						wp = Vector3(pos.x + sgn * (w * 0.5 + 0.03), y,
-							pos.z + local)
-					else:
-						theta = PI if sgn > 0.0 else 0.0
-						wp = Vector3(pos.x + local, y, pos.z + sgn * (d * 0.5 + 0.03))
-					var xf := Transform3D.IDENTITY \
-						.scaled(Vector3(WINDOW_W, WINDOW_H, 1.0)) \
-						.rotated_local(Vector3.UP, theta)
-					xf.origin = wp
-					if rng.randf() < WINDOW_COOL_CHANCE:
-						cool_xforms.append(xf)
-					else:
-						warm_xforms.append(xf)
-
-		# Rooftop clutter: water tank / AC unit, antenna on the tall ones.
-		if h > 18.0:
-			batches.add(Vector3(0.2, 5.0, 0.2),
-				Vector3(pos.x - w * 0.25, base + h + 2.5, pos.z), clutter_mat)
-		if rng.randf() < 0.75:
-			batches.add(Vector3(2.2, 2.2, 2.2),
-				Vector3(pos.x + w * 0.2, base + h + 1.1, pos.z - d * 0.2), tank_mat)
-		if rng.randf() < 0.6:
-			batches.add(Vector3(1.6, 0.8, 1.2),
-				Vector3(pos.x - w * 0.2, base + h + 0.4, pos.z + d * 0.25),
-				clutter_mat)
-
-		# Neon sign on a few facades: emissive, feeds the glow.
-		if i in NEON_BUILDINGS:
-			var neon_color: Material = neon_mat if i % 2 == 0 else neon_magenta
-			var strip_h: float = 0.55
-			var strip_w: float = minf(minf(w, d), 9.0)
+			var strip_w: float = span * 0.8
+			var strip_h: float = 0.35
 			var npos: Vector3
 			var ntheta: float
-			if absf(pos.x) > 0.001:
-				var sgn: float = signf(pos.x)
-				npos = Vector3(pos.x + sgn * (w * 0.5 + 0.08),
-					base + h * 0.6, pos.z)
+			if axis == 0:
+				npos = Vector3(pos.x + sgn * (w * 0.5 + 0.08), base + 2.6, pos.z)
 				ntheta = (-PI * 0.5) if sgn > 0.0 else PI * 0.5
 			else:
 				var sgn2: float = signf(pos.z)
-				npos = Vector3(pos.x, base + h * 0.6,
-					pos.z + sgn2 * (d * 0.5 + 0.08))
+				npos = Vector3(pos.x, base + 2.6,
+						pos.z + sgn2 * (d * 0.5 + 0.08))
 				ntheta = PI if sgn2 > 0.0 else 0.0
-			var neon_node := MeshInstance3D.new()
-			neon_node.mesh = neon_mesh
-			neon_node.material_override = neon_color
-			var nxf := Transform3D.IDENTITY \
+			var xf := Transform3D.IDENTITY \
 				.scaled(Vector3(strip_w, strip_h, 1.0)) \
 				.rotated_local(Vector3.UP, ntheta)
-			nxf.origin = npos
-			neon_node.transform = nxf
-			neon_node.name = "Building_%d_Neon" % i
-			root.add_child(neon_node)
+			xf.origin = npos
+			batches.add_xf(xf, neon_a if i % 2 == 0 else neon_b)
 
 	batches.flush(root, block_size)
-
-	# All lit windows: two MultiMeshes (warm / cool) = two draw calls for the
-	# whole block instead of ~180 individual meshes.
-	_add_window_multimesh(root, "WindowsWarm", warm_xforms, warm_mat)
-	_add_window_multimesh(root, "WindowsCool", cool_xforms, cool_mat)
-
 	_add_dusk_rim_light(root)
+
 
 
 func _add_window_multimesh(parent: Node, node_name: String,
