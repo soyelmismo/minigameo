@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cprobevalidate0"]
 
 [ext_resource type="PackedScene" path="res://src/bootstrap/main.tscn" id="1_main"]
-[ext_resource type="Script" path="res://_probe_validate.gd" id="2_probe"]
+[ext_resource type="Script" path="res://tools/benchmark/runtime_benchmark.gd" id="2_probe"]
 
 [node name="ProbeHost" type="Node"]
 
