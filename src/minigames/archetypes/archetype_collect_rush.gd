@@ -1,22 +1,22 @@
 class_name ArchetypeCollectRush
 extends MinigameArchetype
-## Arquetipo 1 — COLLECT_RUSH (scaffold.md §8.1 fila 1, §8.3 fila 1).
+## Archetype 1 — COLLECT_RUSH (scaffold.md §8.1 row 1, §8.3 row 1).
 ##
-## Slots leídos:
+## Slots read:
 ##   SpawnRecipe    → SCATTER/STATIC/FLEE, count, spawn_radius
-##   ObjectiveRecipe→ kind COLLECT_N, target = N objetos, fail_on TIMEOUT
+##   ObjectiveRecipe→ kind COLLECT_N, target = N objects, fail_on TIMEOUT
 ##   HUDRecipe      → COUNTER
 ##   InputMode      → RUN
 ##
-## Gancho: recoger N objetos antes de que se acabe el tiempo. Éxito con bonus
-## de tiempo sobrante; fracaso por TIMEOUT. 100% data-driven: el micro-juego
-## concreto es su `.tres`, este motor es genérico y reutilizable.
+## Hook: collect N objects before time runs out. Success with a leftover
+## time bonus; failure by TIMEOUT. 100% data-driven: the concrete micro-game
+## is its `.tres`; this engine is generic and reusable.
 
 const KIND_COLLECT_N := &"COLLECT_N"
 ## Archetype default for `reach_m`. Read through _slot_value(), so a
 ## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
 ## data, never magic numbers in gameplay).
-const DEFAULT_PICKUP_RADIUS := 1.8  # radio de recogida (distancia al jugador)
+const DEFAULT_PICKUP_RADIUS := 1.8  # pickup radius (distance to the player)
 
 var _collected: int = 0
 var _pickup_radius: float = DEFAULT_PICKUP_RADIUS
@@ -38,7 +38,7 @@ func start() -> void:
 	_spawn_collectibles()
 
 
-## Spawnea los coleccionables alrededor del jugador (o del centro de arena).
+## Spawns the collectibles around the player (or the arena center).
 func _spawn_collectibles() -> void:
 	if _meta == null or _meta.spawn_recipe == null:
 		push_warning("ArchetypeCollectRush: metadata has no spawn_recipe")
@@ -58,7 +58,7 @@ func _spawn_collectibles() -> void:
 				node.connect("collected", _on_collectible_taken)
 
 
-## Centro de spawn: el jugador si está en el contexto, si no el centro de arena.
+## Spawn center: the player if it is in the context, otherwise the arena center.
 func _resolve_center() -> Vector3:
 	var ctx := get_context()
 	if ctx != null and ctx.player != null and is_instance_valid(ctx.player):
@@ -79,8 +79,8 @@ func _on_collectible_taken() -> void:
 		finish_success(_time_bonus_per_s)
 
 
-## Frame lógico: además del reloj base, resuelve recogidas por proximidad
-## (fallback cuando la entidad no emite `collected`).
+## Logical frame: besides the base clock, it resolves pickups by proximity
+## (fallback when the entity does not emit `collected`).
 func advance(delta: float) -> void:
 	var ctx := get_context()
 	if ctx == null or ctx.player == null or not is_instance_valid(ctx.player):
@@ -97,7 +97,7 @@ func advance(delta: float) -> void:
 			else:
 				_on_collectible_taken()
 				node.queue_free()
-			return  # una recogida por frame
+			return  # one pickup per frame
 
 
 func _node_position(node: Node) -> Vector3:
@@ -111,7 +111,7 @@ func teardown() -> void:
 	_collected = 0
 
 
-## Progreso actual (para tests y HUD).
+## Current progress (for tests and the HUD).
 func get_collected() -> int:
 	return _collected
 

@@ -1,22 +1,22 @@
 class_name ArchetypeMeterStop
 extends MinigameArchetype
-## Arquetipo 9 — METER_STOP (scaffold.md §8.1 fila 9, §8.3 fila 9).
+## Archetype 9 — METER_STOP (scaffold.md §8.1 row 9, §8.3 row 9).
 ##
-## Slots leídos:
-##   SpawnRecipe    → medidor animado (speed = barrido del marcador)
-##   ObjectiveRecipe→ kind STOP_IN_ZONE, target = N paradas válidas, tolerance = semiancho
+## Slots read:
+##   SpawnRecipe    → animated meter (speed = marker sweep)
+##   ObjectiveRecipe→ kind STOP_IN_ZONE, target = N valid stops, tolerance = half-width
 ##   HUDRecipe      → PROGRESS
 ##   InputMode      → BUTTON
 ##
-## Mecánica: un marcador barre el medidor de forma continua; pulsar BUTTON
-## dentro de la zona válida (centro ± `tolerance`) suma parada. Fallar no rompe
-## el micro-juego salvo que `fail_on` lo declare.
+## Mechanic: a marker sweeps the meter continuously; pressing BUTTON
+## inside the valid zone (center ± `tolerance`) scores a stop. Missing does
+## not break the micro-game unless `fail_on` declares it.
 
 const KIND_STOP_IN_ZONE := &"STOP_IN_ZONE"
 ## Archetype default for `sweep_speed`. Read through _slot_value(), so a
 ## `.tres` that fills ObjectiveRecipe.sweep_speed overrides it (§1.3: tuning is
 ## data, never magic numbers in gameplay).
-const DEFAULT_SWEEP_SPEED := 1.0  # ciclos/segundo del barrido cuando no hay speed
+const DEFAULT_SWEEP_SPEED := 1.0  # sweep cycles per second when no speed is given
 
 var _stops: int = 0
 var _target: int = 3
@@ -35,7 +35,7 @@ func setup(ctx: MinigameContext) -> void:
 		_target = _meta.objective_recipe.target
 		_tolerance = _meta.objective_recipe.tolerance
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
-	# Convención de slots: `speed` del SpawnRecipe = velocidad de barrido.
+	# Slot convention: `speed` of the SpawnRecipe = sweep speed.
 	if _meta != null and _meta.spawn_recipe != null and _meta.spawn_recipe.speed > 0.0:
 		_sweep_speed = _meta.spawn_recipe.speed / 10.0
 
@@ -45,7 +45,7 @@ func start() -> void:
 	emit_event(&"meter_ready", {"tolerance": _tolerance, "target": _target})
 
 
-## Barre el marcador 0..1..0 (ping-pong) usando el reloj base del arquetipo.
+## Sweeps the marker 0..1..0 (ping-pong) using the archetype's base clock.
 func advance(_delta: float) -> void:
 	_marker = 0.5 + 0.5 * sin(get_elapsed() * TAU * _sweep_speed)
 	emit_event(&"meter_sweep", {"value": _marker})
@@ -64,7 +64,7 @@ func on_input(input_event: InputEvent) -> void:
 		pressed = (input_event as InputEventJoypadButton).pressed
 	if not pressed:
 		return
-	# La zona válida es el centro del medidor ± tolerancia.
+	# The valid zone is the center of the meter ± tolerance.
 	var in_zone: bool = absf(_marker - 0.5) <= _tolerance
 	if in_zone:
 		_stops += 1

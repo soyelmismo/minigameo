@@ -1,7 +1,7 @@
 extends Node
 class_name PanelStyler
-## Estilo Nintendo-arcade compartido (scaffold §13.2): esquinas redondeadas,
-## outline grueso oscuro, panel semiopaco. Lo aplican HUD y pantallas.
+## Shared Nintendo-arcade style (scaffold §13.2): rounded corners,
+## thick dark outline, semi-opaque panel. Applied by the HUD and the screens.
 
 static func panel_style(border_color: Color = UIColors.PRIMARY, radius: int = 14) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()

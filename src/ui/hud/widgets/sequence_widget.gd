@@ -1,7 +1,7 @@
 extends Control
 class_name SequenceWidget
-## Widget SEQUENCE (scaffold §13.1): pasos en orden. Tick al acertar,
-## shake al fallar. Usado por GATES_IN_ORDER / MEMORY_REPLAY / CHAIN_N.
+## SEQUENCE widget (scaffold §13.1): steps in order. Tick on a hit,
+## shake on a miss. Used by GATES_IN_ORDER / MEMORY_REPLAY / CHAIN_N.
 
 @export var cfg: HUDConfig = null
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	_apply_outline(UIColors.semantic(&"PRIMARY"))
 
 
-## Configura el widget desde el slot (icon + color semántico).
+## Configures the widget from the slot (icon + semantic color).
 func configure(icon: Texture2D, color: Color) -> void:
 	if _icon != null:
 		if icon != null:
@@ -36,7 +36,7 @@ func configure(icon: Texture2D, color: Color) -> void:
 		_apply_outline(color)
 
 
-## Define el número de pasos de la secuencia.
+## Sets the number of steps of the sequence.
 func set_step_count(count: int) -> void:
 	_total = maxi(0, count)
 	_current = 0
@@ -53,7 +53,7 @@ func set_step_count(count: int) -> void:
 		_steps.add_child(p)
 	_refresh_steps()
 
-## Marca el paso actual como acertado (tick + avance).
+## Marks the current step as hit (tick + advance).
 func hit_step() -> void:
 	if _current < _total:
 		_current += 1
@@ -61,7 +61,7 @@ func hit_step() -> void:
 	_pop()
 
 
-## Fallo: shake del widget y reset de la secuencia.
+## Miss: shake of the widget and reset of the sequence.
 func miss_step() -> void:
 	_shake()
 	for i in _total:
@@ -72,12 +72,12 @@ func miss_step() -> void:
 	_refresh_steps()
 
 
-## Índice del paso activo (para tests).
+## Index of the active step (for tests).
 func current_step() -> int:
 	return _current
 
 
-## Total de pasos (para tests).
+## Total number of steps (for tests).
 func total_steps() -> int:
 	return _total
 

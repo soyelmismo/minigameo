@@ -1,19 +1,19 @@
 class_name ArchetypeRhythm
 extends MinigameArchetype
-## Arquetipo 5 — RHYTHM (scaffold.md §8.1 fila 5, §8.3 fila 5).
+## Archetype 5 — RHYTHM (scaffold.md §8.1 row 5, §8.3 row 5).
 ##
-## Slots leídos:
-##   SpawnRecipe    → en beat, motion ORBIT
-##   ObjectiveRecipe→ kind TAP_N, tolerance = ventana de beat
+## Slots read:
+##   SpawnRecipe    → on beat, motion ORBIT
+##   ObjectiveRecipe→ kind TAP_N, tolerance = beat window
 ##   HUDRecipe      → PROGRESS
 ##   InputMode      → BUTTON
 ##
-## Mecánica: latidos periódicos (`SpawnRecipe.speed` se reutiliza como BPM*0.1
-## para no añadir campos al slot; documentado aquí como convención). Acertar
-## con BUTTON dentro de `tolerance` suma acierto; fallar rompe el combo.
+## Mechanic: periodic beats (`SpawnRecipe.speed` is reused as BPM*0.1
+## to avoid adding fields to the slot; documented here as a convention).
+## Hitting BUTTON inside `tolerance` scores a hit; missing breaks the combo.
 
 const KIND_TAP_N := &"TAP_N"
-const DEFAULT_BEAT_EVERY := 0.5  # solo se usa si el recipe no da velocidad
+const DEFAULT_BEAT_EVERY := 0.5  # only used when the recipe gives no speed
 
 var _hits: int = 0
 var _target: int = 8
@@ -35,7 +35,7 @@ func setup(ctx: MinigameContext) -> void:
 		_target = _meta.objective_recipe.target
 		_tolerance = _meta.objective_recipe.tolerance
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
-	# Convención de slots: `speed` del SpawnRecipe codifica el BPM (sin campo nuevo).
+	# Slot convention: `speed` of the SpawnRecipe encodes the BPM (no new field).
 	if _meta != null and _meta.spawn_recipe != null and _meta.spawn_recipe.speed > 0.0:
 		_beat_every = 60.0 / maxf(1.0, _meta.spawn_recipe.speed)
 
@@ -81,7 +81,7 @@ func on_input(input_event: InputEvent) -> void:
 		_check_press(get_elapsed())
 
 
-## Ventana de acierto: distancia al beat más cercano <= tolerancia.
+## Hit window: distance to the nearest beat <= tolerance.
 func _check_press(at_time: float) -> void:
 	var beats: float = round(at_time / maxf(0.001, _beat_every))
 	var nearest_beat: float = beats * _beat_every

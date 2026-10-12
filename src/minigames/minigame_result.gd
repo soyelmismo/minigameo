@@ -1,18 +1,18 @@
 class_name MinigameResult
 extends RefCounted
-## Resultado de un micro-juego (scaffold.md §7.4).
+## Result of a micro-game (scaffold.md §7.4).
 
 var success: bool = false
 var base_score: int = 0
-var time_bonus: int = 0        # proporcional al tiempo sobrante
+var time_bonus: int = 0        # proportional to the leftover time
 var combo_max: int = 0
 var total_score: int = 0
 var grade: StringName = &"D"   # D C B A S S+
 var fail_reason: StringName = &""  # TIMEOUT | WRONG_INPUT | HIT | ...
 
 
-## Helper de construcción: calcula el total y rellena el grade.
-## `p_` evita ensombrecer las variables de instancia (warning = error aquí).
+## Construction helper: it computes the total and fills in the grade.
+## `p_` avoids shadowing the instance variables (warning = error here).
 static func make(
 	p_success: bool,
 	p_base_score: int,
@@ -31,8 +31,8 @@ static func make(
 	return res
 
 
-## Umbrales de rank: D < C < B < A < S < S+ (datos tuneables en §6.3).
-## Se mantienen aquí como umbrales por combo máximo del micro-juego.
+## Rank thresholds: D < C < B < A < S < S+ (tunable data in §6.3).
+## They are kept here as thresholds per maximum combo of the micro-game.
 static func grade_for(combo_peak: int, did_succeed: bool) -> StringName:
 	if not did_succeed:
 		return &"D"

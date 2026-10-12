@@ -1,10 +1,10 @@
 extends Control
 class_name ProgressWidget
-## Widget PROGRESS (scaffold §13.1): barra con marcador de zona válida
-## (STOP_IN_ZONE, RHYTHM, §8.3). El marcador barre de 0..1.
+## PROGRESS widget (scaffold §13.1): bar with a valid-zone marker
+## (STOP_IN_ZONE, RHYTHM, §8.3). The marker sweeps from 0..1.
 
 @export var cfg: HUDConfig = null
-## Centro y ancho de la zona válida, ambos normalizados 0..1.
+## Center and width of the valid zone, both normalized 0..1.
 @export var zone_center: float = 0.75
 @export var zone_half_width: float = 0.08
 
@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 	_last_in_zone = in_zone
 
 
-## Configura el widget desde el slot (icon + color semántico).
+## Configures the widget from the slot (icon + semantic color).
 func configure(icon: Texture2D, color: Color) -> void:
 	if _icon != null:
 		if icon != null:
@@ -56,19 +56,19 @@ func configure(icon: Texture2D, color: Color) -> void:
 		_apply_outline(color)
 
 
-## Ajusta la zona válida (del ObjectiveRecipe.tolerance, normalizada).
+## Adjusts the valid zone (from ObjectiveRecipe.tolerance, normalized).
 func set_zone(center: float, half_width: float) -> void:
 	zone_center = clampf(center, 0.0, 1.0)
 	zone_half_width = clampf(half_width, 0.0, 0.5)
 	_layout_zone()
 
 
-## Posición actual del marcador (0..1, para tests).
+## Current position of the marker (0..1, for tests).
 func marker_position() -> float:
 	return _position
 
 
-## True si una posición normalizada cae dentro de la zona válida.
+## True if a normalized position falls inside the valid zone.
 func zone_contains(pos: float) -> bool:
 	return _in_zone(pos)
 

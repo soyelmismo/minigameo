@@ -1,16 +1,16 @@
 class_name ArchetypeMemory
 extends MinigameArchetype
-## Arquetipo 12 — MEMORY (scaffold.md §8.1 fila 12, §8.3 fila 12).
+## Archetype 12 — MEMORY (scaffold.md §8.1 row 12, §8.3 row 12).
 ##
-## Slots leídos:
-##   SpawnRecipe    → secuencia que se revela (entradas del patrón)
-##   ObjectiveRecipe→ kind MEMORY_REPLAY, target = longitud de la secuencia
+## Slots read:
+##   SpawnRecipe    → sequence that gets revealed (pattern entries)
+##   ObjectiveRecipe→ kind MEMORY_REPLAY, target = sequence length
 ##   HUDRecipe      → SEQUENCE
 ##   InputMode      → BUTTON
 ##
-## Mecánica: se genera una secuencia determinista con `ctx.rng`, se "revela"
-## emitiendo eventos `memory_reveal` (la UI la muestra), y el jugador la repite
-## con BUTTON. Fallar un elemento reinicia la ronda (fail_on WRONG_INPUT).
+## Mechanic: a deterministic sequence is generated with `ctx.rng`, it is
+## "revealed" by emitting `memory_reveal` events (the UI shows it), and the
+## player repeats it with BUTTON. Missing one element restarts the round
 
 const KIND_MEMORY_REPLAY := &"MEMORY_REPLAY"
 
@@ -38,7 +38,7 @@ func start() -> void:
 	_reveal()
 
 
-## Secuencia determinista: mismo `SeededRNG` + misma semilla = misma secuencia.
+## Deterministic sequence: the same `SeededRNG` + the same seed = the same sequence.
 func _build_sequence() -> void:
 	var ctx := get_context()
 	var slots: int = 4
@@ -65,7 +65,7 @@ func _spawn_pads() -> void:
 			node.add_to_group(&"mg_memory_pad")
 
 
-## Revela la secuencia al HUD (evento `memory_reveal` con el patrón).
+## Reveals the sequence to the HUD (`memory_reveal` event with the pattern).
 func _reveal() -> void:
 	_reveal_done = true
 	emit_event(&"memory_reveal", {"sequence": _sequence.duplicate()})
@@ -83,7 +83,7 @@ func on_input(input_event: InputEvent) -> void:
 		pressed = (input_event as InputEventJoypadButton).pressed
 	if not pressed:
 		return
-	# Sin entrada posicional fiable se resuelve el slot más cercano al jugador.
+	# Without reliable positional input, the slot closest to the player is resolved.
 	var slot: int = _nearest_pad_slot()
 	_check(slot)
 
@@ -120,7 +120,7 @@ func _check(slot: int) -> void:
 		if _index >= _sequence.size():
 			finish_success(_time_bonus_per_s)
 	else:
-		# Reinicio de ronda (§8.1 fila 12: replicar el patrón).
+		# Round restart (§8.1 row 12: replicate the pattern).
 		_index = 0
 		set_progress(0.0)
 		emit_event(&"memory_miss", {"expected": _sequence[0], "got": slot})

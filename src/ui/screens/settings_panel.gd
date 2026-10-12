@@ -1,12 +1,12 @@
 extends Control
 class_name SettingsPanel
-## Panel de accesibilidad (scaffold §13.3, AGENTS.md §8):
-## shake 0..1, flashes, indicadores de daltonismo, subtítulos, velocidad de
-## texto. Persiste vía SettingsManager (que guarda en `user://` a través de
-## SaveSystem), así que sobrevive a un reinicio.
+## Accessibility panel (scaffold §13.3, AGENTS.md §8):
+## shake 0..1, flashes, colorblind indicators, subtitles, speed of
+## text. It persists via SettingsManager (which saves to `user://` through
+## SaveSystem), so it survives a restart.
 ##
-## Navegable con teclado Y mando: sliders y toggles son enfocables, y
-## `ui_cancel` (Esc / B) cierra el panel igual que BACK.
+## Navigable with keyboard AND gamepad: sliders and toggles are focusable, and
+## `ui_cancel` (Esc / B) closes the panel just like BACK.
 
 signal closed()
 
@@ -34,7 +34,7 @@ func _ready() -> void:
 	_close_button.pressed.connect(_on_close)
 
 
-## Abre el panel y toma el foco del primer control enfocable.
+## Opens the panel and takes the focus of the first focusable control.
 func open() -> void:
 	settings.load_from_settings_manager()
 	_apply_to_widgets()
@@ -42,7 +42,7 @@ func open() -> void:
 	UIFocus.grab_first(self)
 
 
-## Refleja el modelo en los widgets.
+## Reflects the model in the widgets.
 func _apply_to_widgets() -> void:
 	_shake_slider.min_value = 0.0
 	_shake_slider.max_value = 1.0
@@ -63,7 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## BACK / Esc: recoge los widgets, persiste y avisa al dueño.
+## BACK / Esc: it collects the widgets, persists and notifies the owner.
 func _on_close() -> void:
 	_collect_from_widgets()
 	settings.apply_to_settings_manager()
@@ -80,18 +80,18 @@ func _collect_from_widgets() -> void:
 	settings.text_speed = clampf(_text_speed.value, 0.5, 2.0)
 
 
-## Ajustes actuales (para tests).
+## Current settings (for tests).
 func current_settings() -> AccessibilitySettings:
 	return settings
 
 
-## Valor vigente de shake tras recoger los widgets (para tests).
+## Shake value in force after collecting the widgets (for tests).
 func shake_value() -> float:
 	_collect_from_widgets()
 	return settings.shake_intensity
 
 
-## Valor vigente de la velocidad de texto (para tests).
+## Text speed value in force (for tests).
 func text_speed_value() -> float:
 	_collect_from_widgets()
 	return settings.text_speed

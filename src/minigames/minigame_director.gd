@@ -1,12 +1,12 @@
 extends Node
-## Orquesta el ciclo de vida de los micro-juegos (scaffold.md §6.12).
+## Orchestrates the lifecycle of the micro-games (scaffold.md §6.12).
 ##
-## Carga el micro-juego desde `MinigameRegistry`, inyecta `MinigameContext`,
-## ejecuta setup → start, delega update/on_input, recibe `MinigameResult`,
-## ejecuta teardown con limpieza huérfana, y notifica al MatchManager.
+## Loads the micro-game from `MinigameRegistry`, injects `MinigameContext`,
+## runs setup → start, delegates update/on_input, receives `MinigameResult`,
+## runs teardown with orphan cleanup, and notifies the MatchManager.
 ##
-## Nunca referencia otros sistemas directamente: los resuelve por duck-typing
-## vía `get_tree().root.get_node_or_null()` y degrada en silencio si faltan.
+## It never references other systems directly: it resolves them by duck-typing
+## via `get_tree().root.get_node_or_null()` and degrades silently if they are
 
 const SERVICE_REGISTRY := &"MinigameRegistry"
 const SERVICE_SCORE := &"ScoreDirector"
@@ -21,10 +21,10 @@ var _active: Minigame = null
 var _active_id: StringName = &""
 var _last_id: StringName = &""
 var _last_archetype: StringName = &""
-var _history: Array = []            # ids jugados (para anti-repetición)
+var _history: Array = []            # played ids (for anti-repetition)
 var _cooldown_left: float = 0.0
 
-# --- Cooldown entre micro-juegos. Tunable, no hardcodeado en gameplay. ---
+# --- Cooldown between micro-games. Tunable, not hardcoded in gameplay. ---
 @export var cooldown_s: float = 3.0
 
 var _orphan_check_failed: bool = false
@@ -67,7 +67,7 @@ func _on_match_time_up() -> void:
 		abort(&"MATCH_TIMEOUT")
 
 
-## Resuelve el registry: autoload hermano, hijo del director, o nuevo.
+## Resolves the registry: sibling autoload, child of the director, or a new one.
 func _ensure_registry() -> void:
 	if _registry != null and is_instance_valid(_registry):
 		_registry.ensure_scanned()
@@ -117,12 +117,12 @@ func get_active_metadata() -> MinigameMetadata:
 	return get_metadata_for(_active_id)
 
 
-## Verdadero si hay un micro-juego en curso.
+## True while a micro-game is in progress.
 func is_active() -> bool:
 	return _active != null and is_instance_valid(_active)
 
 
-## Segundos restantes de cooldown (0 = listo para lanzar otro).
+## Remaining cooldown seconds (0 = ready to launch another).
 func get_cooldown_left() -> float:
 	return _cooldown_left
 
@@ -137,7 +137,7 @@ func reset_runtime() -> void:
 		_active_id = &""
 
 
-## Debe llamarse cada frame desde el bucle del juego (MatchManager/escena).
+## Must be called every frame from the game loop (MatchManager/scene).
 func update(delta: float) -> void:
 	if _cooldown_left > 0.0:
 		_cooldown_left = maxf(0.0, _cooldown_left - delta)
@@ -147,15 +147,15 @@ func update(delta: float) -> void:
 	_check_match_timeout()
 
 
-## Reenvía la entrada cruda al micro-juego activo.
+## Forwards the raw input to the active micro-game.
 func on_input(event: InputEvent) -> void:
 	if not is_active():
 		return
 	_active.on_input(event)
 
 
-## Arranca el micro-juego `id` con un contexto resuelto en este momento.
-## Devuelve false si no puede lanzarse (cooldown, id desconocido, ya activo).
+## Starts the micro-game `id` with a context resolved at this moment.
+## Returns false if it cannot be launched (cooldown, unknown id, already active).
 func play(id: StringName, difficulty: float = 0.0) -> bool:
 	if is_active():
 		var active_name: String = String(_active_id)
@@ -187,7 +187,7 @@ func play(id: StringName, difficulty: float = 0.0) -> bool:
 		instance.free()
 		return false
 
-	# El micro-juego vive bajo el director para que su limpieza sea trazable.
+	# The micro-game lives under the director so its cleanup is traceable.
 	mg.name = "MG_%s" % String(id)
 	add_child(mg)
 	_active = mg
@@ -215,27 +215,27 @@ func _announce(meta: MinigameMetadata) -> void:
 	_emit(&"minigame_announced", [meta])
 
 
-## Solicita la finalización anticipada (aborto del director). Fuerza el
-## resultado a fracaso por timeout de match, como pide §7.1.
+## Requests the early finish (abort from the director). It forces the
+## result to a failure by match timeout, as §7.1 asks.
 func abort(reason: StringName = &"MATCH_TIMEOUT") -> void:
 	if not is_active():
 		return
-	# El arquetipo limpia sus huérfanos en teardown; aquí solo cerramos.
+	# The archetype cleans up its orphans in teardown; here we only close.
 	_active.finished.emit(MinigameResult.make(false, 0, 0, 0, reason))
-	# `_on_minigame_finished` se dispara por la señal y hace el teardown.
+	# `_on_minigame_finished` is triggered by the signal and does the teardown.
 
 
-## Elige un micro-juego evitando repeticiones inmediatas (scaffold.md §6.12).
-## Devuelve el id elegido o "" si el catálogo está vacío.
+## Picks a micro-game avoiding immediate repetitions (scaffold.md §6.12).
+## Returns the chosen id, or "" if the catalog is empty.
 func pick_next(rng: Object = null) -> StringName:
 	var ids: Array = _registry.get_all_ids()
 	if ids.is_empty():
 		return &""
 	var candidates: Array = ids.duplicate()
-	# Nunca el mismo id dos veces seguidas.
+	# Never the same id twice in a row.
 	if _last_id != &"" and candidates.size() > 1:
 		candidates = candidates.filter(func(cid: StringName) -> bool: return cid != _last_id)
-	# Evitar el mismo arquetipo dos veces si hay alternativas.
+	# Avoid the same archetype twice when there are alternatives.
 	var by_archetype: Array = candidates.filter(
 		func(cid: StringName) -> bool:
 			var m: MinigameMetadata = _registry.get_metadata(cid)
@@ -243,14 +243,14 @@ func pick_next(rng: Object = null) -> StringName:
 	)
 	if not by_archetype.is_empty():
 		candidates = by_archetype
-	# Selección determinista vía SeededRNG cuando está disponible.
+	# Deterministic selection via SeededRNG when available.
 	if rng != null and rng.has_method("randi_range"):
 		var idx: int = rng.randi_range(0, candidates.size() - 1)
 		return candidates[idx] as StringName
 	return candidates[randi_range(0, candidates.size() - 1)] as StringName
 
 
-## Micro-juego activo (para que la UI lea su metadata/HUDRecipe).
+## Active micro-game (so the UI can read its metadata/HUDRecipe).
 func get_active() -> Minigame:
 	return _active
 
@@ -259,7 +259,7 @@ func get_active_id() -> StringName:
 	return _active_id
 
 
-## Historial de ids jugados (orden de juego).
+## History of played ids (play order).
 func get_history() -> Array:
 	return _history.duplicate()
 
@@ -280,7 +280,7 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 	ctx.music = _resolve(SERVICE_MUSIC)
 	ctx.voice = _resolve(SERVICE_VOICE)
 	ctx.player = _resolve_player()
-	# El mundo se resuelve tolerante: en tests headless no hay current_scene.
+	# The world is resolved tolerantly: in headless tests there is no current_scene.
 	var scene: Node = get_tree().current_scene if get_tree() != null else null
 	if scene != null:
 		ctx.world_root = scene.get_node_or_null("World") as Node3D
@@ -288,7 +288,7 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 			ctx.world_root = scene as Node3D
 	ctx.arena_center = Vector3.ZERO
 	ctx.difficulty = difficulty
-	# time_left_in_match es el tope duro (§7.1): nunca por encima del reloj.
+	# time_left_in_match is the hard cap (§7.1): never above the clock.
 	if ctx.match_manager != null and ctx.match_manager.get("time_left") != null:
 		var left: Variant = ctx.match_manager.get("time_left")
 		if left is float or left is int:
@@ -296,7 +296,7 @@ func _build_context(meta: MinigameMetadata, difficulty: float) -> MinigameContex
 	return ctx
 
 
-## Resuelve un sistema por nombre en el árbol raíz. Null si no existe.
+## Resolves a system by name in the root tree. Null if it does not exist.
 ## Resolves a system through the service registry (scaffold §6, AGENTS.md §1.1).
 ##
 ## This used to look the node up by raw `/root/<autoload_name>` path, which is
@@ -315,7 +315,7 @@ func _resolve(service_name: StringName) -> Object:
 	return node as Object
 
 
-## El jugador se busca en GameServices o en el árbol, no por autoload directo.
+## The player is looked up in GameServices or in the tree, not by direct autoload.
 func _resolve_player() -> Node3D:
 	var services: Object = _resolve(&"GameServices")
 	if services != null and services.has_method("lookup"):
@@ -351,19 +351,19 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 	_active = null
 	_active_id = &""
 
-	# --- Teardown + aserción de limpieza huérfana (§1.4, §15) ---
+	# --- Teardown + orphan cleanup assertion (§1.4, §15) ---
 	_verify_orphans_before(finished_mg)
 	finished_mg.teardown()
 	_verify_orphans_after(finished_mg)
 
-	# --- Puntuación vía ScoreDirector si existe (§6.3) ---
+	# --- Scoring via ScoreDirector if it exists (§6.3) ---
 	var score: Object = _resolve(SERVICE_SCORE)
 	if score != null and score.has_method("add_minigame_result") and result != null:
 		score.add_minigame_result(result)
 
-	# --- Impacto vía ImpactDirector si existe (§6.5) ---
-	# El contrato de ImpactDirector.impact() es por peso entero (§6.5):
-	# WEIGHT_LIGHT/MEDIUM/HEAVY/CRITICAL = 0..3. Degrada si no existe.
+	# --- Impact via ImpactDirector if it exists (§6.5) ---
+	# The ImpactDirector.impact() contract is by integer weight (§6.5):
+	# WEIGHT_LIGHT/MEDIUM/HEAVY/CRITICAL = 0..3. Degrades if it does not exist.
 	var impact: Object = _resolve(SERVICE_IMPACT)
 	if impact != null and impact.has_method("impact"):
 		impact.impact(3 if result != null and result.success else 2)
@@ -372,7 +372,7 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 	var style: Object = _resolve(SERVICE_STYLE)
 	if style != null and style.has_method("revert_to_base"):
 		style.revert_to_base()
-	# --- Avisar al MatchManager: micro-juego terminado (§6.2) ---
+	# --- Notify the MatchManager: micro-game finished (§6.2) ---
 	var match_mgr: Object = _resolve(SERVICE_MATCH)
 	if match_mgr != null and match_mgr.has_method("finish_minigame"):
 		match_mgr.finish_minigame(result)
@@ -384,8 +384,8 @@ func _on_minigame_finished(result: MinigameResult) -> void:
 		finished_mg.queue_free()
 
 
-## Comprueba antes del teardown que el micro-juego no tiene nodos sueltos
-## fuera de su propio subárbol (defensa del invariante de §1.4).
+## Checks before the teardown that the micro-game has no loose nodes
+## outside its own subtree (defence of the §1.4 invariant).
 func _verify_orphans_before(mg: Minigame) -> void:
 	_orphan_check_failed = false
 	if mg == null or not is_instance_valid(mg):
@@ -393,7 +393,7 @@ func _verify_orphans_before(mg: Minigame) -> void:
 	var tree := get_tree()
 	if tree == null or tree.current_scene == null:
 		return
-	# Un nodo en el grupo `mg_entity` que NO cuelgue del micro-juego es huérfano.
+	# A node in the `mg_entity` group that does NOT hang off the micro-game is an orphan.
 	for node: Node in get_tree().get_nodes_in_group(&"mg_entity"):
 		var parent := node.get_parent()
 		var under_mg := false
@@ -410,7 +410,7 @@ func _verify_orphans_before(mg: Minigame) -> void:
 			)
 
 
-## Tras el teardown, ninguna entidad del micro-juego debe seguir en el mundo.
+## After the teardown, no entity of the micro-game must remain in the world.
 func _verify_orphans_after(mg: Minigame) -> void:
 	if mg == null or not is_instance_valid(mg):
 		return
@@ -418,7 +418,7 @@ func _verify_orphans_after(mg: Minigame) -> void:
 		push_error("MinigameDirector: teardown left orphans (see errors above)")
 
 
-## Emite por EventBus si existe; si no, degrada en silencio (§1.1).
+## Emits through EventBus if it exists; otherwise it degrades silently (§1.1).
 func _emit(signal_id: StringName, args: Array) -> void:
 	var bus: Object = _resolve(&"EventBus")
 	if bus != null and bus.has_signal(String(signal_id)):

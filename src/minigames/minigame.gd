@@ -1,22 +1,22 @@
 class_name Minigame
 extends Node
-## Contrato base de TODO micro-juego (scaffold.md §7.1).
+## Base contract of EVERY micro-game (scaffold.md §7.1).
 ##
-## Los arquetipos extienden esta clase; las definiciones `.tres` la configuran.
-## Un micro-juego NUNCA referencia MatchManager, ScoreDirector ni otros
-## sistemas directamente: usa el `MinigameContext` inyectado en `setup()`.
+## The archetypes extend this class; the `.tres` definitions configure it.
+## A micro-game NEVER references MatchManager, ScoreDirector or other
+## systems directly: it uses the `MinigameContext` injected in `setup()`.
 ##
-## Reglas del contrato (§7.1):
-## - Un micro-juego termina SOLO vía `finished(result)` o aborto del director.
-## - Debe ser determinista dado el mismo `SeededRNG` y la misma semilla.
-## - No debe dejar entidades huérfanas ni estados globales sucios.
-## - El director llama a `update()`/`on_input()`; no usar `_process` ni
-##   `_physics_process` salvo que el arquetipo lo documente explícitamente.
+## Contract rules (§7.1):
+## - A micro-game ends ONLY via `finished(result)` or an abort from the director.
+## - It must be deterministic given the same `SeededRNG` and the same seed.
+## - It must not leave orphan entities nor dirty global state.
+## - The director calls `update()`/`on_input()`; do not use `_process` nor
+##   `_physics_process` unless the archetype documents it explicitly.
 
-## Fin del micro-juego. Única salida válida (además del aborto del director).
+## End of the micro-game. The only valid exit (besides the director's abort).
 signal finished(result: MinigameResult)
 
-## Progreso normalizado 0..1 para el HUD auto-generado (§13.1).
+## Normalized progress 0..1 for the auto-generated HUD (§13.1).
 signal progress_changed(normalized: float)
 
 ## Hooks de juice/audio/VO: kind = "hit" | "miss" | "milestone" | "start" | ...
@@ -29,7 +29,7 @@ var _meta: MinigameMetadata = null
 var _running: bool = false
 
 
-# --- Ciclo de vida (obligatorio respetar el orden) ---
+# --- Lifecycle (the order is mandatory) ---
 
 ## Injection. No gameplay yet: read from the context.
 ## Archetypes extend MinigameArchetype, which overrides setup() and calls
@@ -54,19 +54,19 @@ func is_running() -> bool:
 	return _running
 
 
-## Frame lógico. El director llama a update(); NO usar _process directo.
+## Logical frame. The director calls update(); do NOT use _process directly.
 func update(delta: float) -> void:
 	pass
 
 
-## Entrada cruda; cada micro-juego decide qué usa (teclas, ratón, stick).
-## `input_event` para no ensombrecer la señal `event` del contrato.
+## Raw input; each micro-game decides what it uses (keys, mouse, stick).
+## `input_event` to avoid shadowing the contract's `event` signal.
 func on_input(input_event: InputEvent) -> void:
 	pass
 
 
-## Cierre limpio: devolver objetos al pool, apagar música extra,
-## dejar el mundo como se encontró.
+## Clean teardown: return objects to the pool, switch off extra music,
+## leave the world as it was found.
 func teardown() -> void:
 	pass
 
@@ -77,13 +77,13 @@ func get_metadata() -> MinigameMetadata:
 	return _meta
 
 
-# --- Acceso de solo lectura al contexto (para arquetipos) ---
+# --- Read-only access to the context (for archetypes) ---
 
-## Contexto inyectado. Null hasta que el director llame a setup().
+## Injected context. Null until the director calls setup().
 func get_context() -> MinigameContext:
 	return _ctx
 
 
-## Cierra el micro-juego emitiendo `finished`. Helper para arquetipos.
+## Ends the micro-game by emitting `finished`. Helper for archetypes.
 func finish_with(result: MinigameResult) -> void:
 	finished.emit(result)

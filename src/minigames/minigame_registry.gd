@@ -1,14 +1,14 @@
 class_name MinigameRegistry
 extends Node
-## Registro central ID → {escena, metadata} (scaffold.md §7.7).
+## Central registry ID → {scene, metadata} (scaffold.md §7.7).
 ##
-## - Poblado por escaneo de `src/minigames/catalog/*.tres` al arrancar.
-## - Valida que cada entrada tenga id, arquetipo y escena válidos.
-## - Falla RUIDOSAMENTE (push_error) ante entradas inválidas, no en silencio.
-## - No conoce micro-juegos concretos: solo arquetipos.
+## - Populated by scanning `src/minigames/catalog/*.tres` at startup.
+## - Validates that every entry has a valid id, archetype and scene.
+## - It fails LOUDLY (push_error) on invalid entries, not silently.
+## - It does not know concrete micro-games: only archetypes.
 ##
-## Un arquetipo se resuelve primero como escena `.tscn`; si no existe se
-## instancia su script `.gd` compilado (mismo motor, cero escenas).
+## An archetype is resolved first as a `.tscn` scene; if it does not exist its
+## compiled `.gd` script is instanced instead (same engine, zero scenes).
 
 const CATALOG_DIR := "res://src/minigames/catalog/"
 const ARCHETYPE_DIR := "res://src/minigames/archetypes/"
@@ -20,18 +20,18 @@ const ARCHETYPE_DIR := "res://src/minigames/archetypes/"
 ## with a metadata whose spawn_recipe was empty (no entities, no HUD recipe).
 const SERVICE_NAME := &"registry"
 
-## metadata por id
+## metadata by id
 var _by_id: Dictionary = {}      # StringName -> MinigameMetadata
-## PackedScene del arquetipo por nombre de arquetipo
+## PackedScene of the archetype by archetype name
 var _archetype_scenes: Dictionary = {}  # StringName -> PackedScene
-## Script del arquetipo (fallback sin .tscn)
+## Script of the archetype (fallback without .tscn)
 var _archetype_scripts: Dictionary = {} # StringName -> GDScript
 var _scanned: bool = false
 
 signal registry_loaded(count: int)
 
 
-## Escanea el catálogo y precarga los arquetipos. Idempotente.
+## Scans the catalog and preloads the archetypes. Idempotent.
 func scan() -> void:
 	if _scanned:
 		return
@@ -44,7 +44,7 @@ func scan() -> void:
 	registry_loaded.emit(_by_id.size())
 
 
-## Precarga escenas `.tscn` y scripts `.gd` de `src/minigames/archetypes/`.
+## Preloads `.tscn` scenes and `.gd` scripts from `src/minigames/archetypes/`.
 func _load_archetypes() -> void:
 	var dir := DirAccess.open(ARCHETYPE_DIR)
 	if dir == null:
@@ -81,7 +81,7 @@ func _load_catalog() -> void:
 	dir.list_dir_end()
 
 
-## Registra una entrada del catálogo validándola. Falla ruidosamente.
+## Registers a catalog entry, validating it. It fails loudly.
 func _register_entry(path: String) -> void:
 	var res: Resource = load(path)
 	if res == null:
@@ -112,23 +112,23 @@ func _register_entry(path: String) -> void:
 
 # --- API ---
 
-## Metadatos por id, o null si no existe.
+## Metadata by id, or null if it does not exist.
 func get_metadata(id: StringName) -> MinigameMetadata:
 	return _by_id.get(id, null) as MinigameMetadata
 
 
-## Escena del arquetipo por nombre, o null si no existe.
+## Scene of the archetype by name, or null if it does not exist.
 func get_archetype_scene(archetype: StringName) -> PackedScene:
 	return _archetype_scenes.get(archetype, null) as PackedScene
 
 
-## True si el arquetipo existe como escena o como script.
+## True if the archetype exists as a scene or as a script.
 func has_archetype(archetype: StringName) -> bool:
 	return _archetype_scenes.has(archetype) or _archetype_scripts.has(archetype)
 
 
-## Instancia el arquetipo: escena si existe, script compilado si no.
-## Nodo base tipo Node (los arquetipos extienden Node/Node3D).
+## Instances the archetype: scene if it exists, compiled script if not.
+## Base Node type (the archetypes extend Node/Node3D).
 func instantiate_archetype(archetype: StringName) -> Node:
 	var scene: PackedScene = get_archetype_scene(archetype)
 	if scene != null:
@@ -144,7 +144,7 @@ func instantiate_archetype(archetype: StringName) -> Node:
 	return null
 
 
-## Todos los ids conocidos, ordenados para determinismo.
+## All known ids, sorted for determinism.
 func get_all_ids() -> Array:
 	var ids: Array = _by_id.keys()
 	ids.sort()
@@ -155,11 +155,11 @@ func has_id(id: StringName) -> bool:
 	return _by_id.has(id)
 
 
-## Número de entradas válidas.
+## Number of valid entries.
 func size() -> int:
 	return _by_id.size()
 
 
-## Escanea si no se ha hecho aún (comodidad para llamadas desde el director).
+## Scans if it has not been done yet (convenience for calls from the director).
 func ensure_scanned() -> void:
 	scan()

@@ -1,17 +1,17 @@
 class_name ArchetypeBalance
 extends MinigameArchetype
-## Arquetipo 13 — BALANCE (scaffold.md §8.1 fila 13, §8.3 fila 13).
+## Archetype 13 — BALANCE (scaffold.md §8.1 row 13, §8.3 row 13).
 ##
-## Slots leídos:
-##   SpawnRecipe    → camino que se estrecha (patrón LINE, count = waypoints)
+## Slots read:
+##   SpawnRecipe    → path that narrows (LINE pattern, count = waypoints)
 ##   ObjectiveRecipe→ kind BALANCE_T, fail_on FALL
 ##   HUDRecipe      → TIMER
 ##   InputMode      → RUN
 ##
-## Mecánica: recorrer el camino siguiendo los waypoints en orden. El camino se
-## estrecha con la dificultad (`difficulty_curve` del metadata, o el radio
-## efectivo del SpawnRecipe). Salirse del ancho permitido cuenta como caída:
-## con `fail_on: FALL` termina el micro-juego; si no, solo rompe el progreso.
+## Mechanic: walk the path following the waypoints in order. The path
+## narrows with difficulty (`difficulty_curve` of the metadata, or the
+## effective radius of the SpawnRecipe). Leaving the allowed width counts as a
+## fall: with `fail_on: FALL` the micro-game ends; otherwise it only breaks the
 
 const KIND_BALANCE_T := &"BALANCE_T"
 ## Archetype default for `path_width`. Read through _slot_value(), so a
@@ -38,7 +38,7 @@ func setup(ctx: MinigameContext) -> void:
 		_target = float(_meta.objective_recipe.target)
 		_fail_on = _meta.objective_recipe.fail_on
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
-	# El camino se estrecha con la dificultad del contexto (0..1).
+	# The path narrows with the difficulty of the context (0..1).
 	var difficulty: float = ctx.difficulty if ctx != null else 0.0
 	_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * 0.6)
 
@@ -68,7 +68,7 @@ func advance(delta: float) -> void:
 	if ctx == null or ctx.player == null or not is_instance_valid(ctx.player):
 		return
 	var player_pos: Vector3 = (ctx.player as Node3D).global_position
-	# Avance por waypoint alcanzado.
+	# Advance on waypoint reached.
 	if _current < _waypoints.size():
 		if player_pos.distance_to(_waypoints[_current]) <= _path_width:
 			_current += 1
@@ -78,12 +78,12 @@ func advance(delta: float) -> void:
 			if _current >= _waypoints.size():
 				finish_success(_time_bonus_per_s)
 				return
-	# Comprobación de ancho: si se aleja del siguiente waypoint más de lo
-	# permitido, es una caída.
+	# Width check: drifting further from the next waypoint than
+	# allowed counts as a fall.
 	var target_wp: Vector3 = _waypoints[mini(_current, _waypoints.size() - 1)]
 	var off: float = player_pos.distance_to(target_wp)
 	if off > _path_width * 3.0:
-		# Caída.
+		# Fall.
 		if _fail_on == &"FALL":
 			finish_fail(&"FALL")
 		else:

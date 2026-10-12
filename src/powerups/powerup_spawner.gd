@@ -1,13 +1,13 @@
 class_name PowerUpSpawner
 extends Node3D
-## Spawner de power-ups sobre la cuadra (scaffold.md §6.11).
+## Power-up spawner over the block (scaffold.md §6.11).
 ##
-## Mantiene N power-ups activos simultáneos (presión constante), los dispersa
-## en un radio y los repone tras un cooldown cuando se recogen. Todo el balance
-## (cuántos, radio, cooldown) son datos exportados, nunca hardcoded.
+## It keeps N power-ups active simultaneously (constant pressure), scatters them
+## within a radius and replenishes them after a cooldown when they are picked
+## up. All the balance (how many, radius, cooldown) is exported data, never
 ##
-## No conoce la ruleta ni los micro-juegos: solo emite `powerup_collected`
-## (vía EventBus si existe) y deja que el director decida qué hacer.
+## It does not know the roulette nor the micro-games: it only emits
+## `powerup_collected` (via EventBus if it exists) and lets the director decide
 
 ## Number of concurrently active power-ups (§6.11 "max N active"). The
 ## authoritative value lives in GameConfig.tres (§1.3); -1 means "read it
@@ -54,7 +54,7 @@ func _apply_config() -> void:
 		respawn_cooldown_s = float(cfg.get("powerup_respawn_s"))
 
 
-## Debe llamarse cada frame desde el bucle del juego.
+## Must be called every frame from the game loop.
 func _physics_process(delta: float) -> void:
 	_player = _resolve_player()
 	_tick_cooldowns(delta)
@@ -63,7 +63,7 @@ func _physics_process(delta: float) -> void:
 	_fill()
 
 
-## Reajusta el número de activos hasta `max_active`.
+## Readjusts the number of active ones up to `max_active`.
 func _fill() -> void:
 	if powerup_scene == null:
 		return
@@ -149,7 +149,7 @@ func _tick_cooldowns(delta: float) -> void:
 			_cooldowns[i] = maxf(0.0, _cooldowns[i] - delta)
 
 
-## Fallback de recogida por distancia (sin físicas / headless).
+## Pickup fallback by distance (without physics / headless).
 func _tick_proximity() -> void:
 	if _player == null or not is_instance_valid(_player):
 		return
@@ -160,7 +160,7 @@ func _tick_proximity() -> void:
 			(node as PowerUp).check_proximity(_player)
 
 
-## Recogida: retira el slot, arranca el cooldown y emite el evento.
+## Pickup: it removes the slot, starts the cooldown and emits the event.
 func _on_collected(_by: Node) -> void:
 	var idx: int = _alive.find(_by)
 	if idx >= 0:
@@ -180,7 +180,7 @@ func _on_collected(_by: Node) -> void:
 	_emit(&"powerup_collected", [&"powerup"])
 
 
-## Repone los slots cuyo cooldown ha terminado.
+## Replenishes the slots whose cooldown has finished.
 func _fill_from_cooldowns() -> void:
 	var i: int = 0
 	while i < _cooldowns.size():
@@ -191,17 +191,17 @@ func _fill_from_cooldowns() -> void:
 		i += 1
 
 
-## Número de power-ups actualmente activos.
+## Number of power-ups currently active.
 
 
-## Cooldown restante del slot `i` (0 = libre).
+## Remaining cooldown of the slot `i` (0 = free).
 func get_cooldown_left(index: int) -> float:
 	if index < 0 or index >= _cooldowns.size():
 		return 0.0
 	return _cooldowns[index]
 
 
-# --- Resolución duck-typed de sistemas (§1.1) ---
+# --- Duck-typed resolution of systems (§1.1) ---
 
 func _resolve(node_name: StringName) -> Object:
 	var node: Node = get_tree().root.get_node_or_null(String(node_name))

@@ -1,13 +1,13 @@
 extends CanvasLayer
 class_name GameHUD
 ## HUD maestro (scaffold §13.1). La capa de interfaz es DATA-DRIVEN:
-## el objetivo del micro-juego se auto-construye desde `HUDRecipe`
-## vía WidgetFactory; cero widgets ad-hoc por micro-juego (§1.8).
+## the objective of the micro-game is auto-built from `HUDRecipe`
+## via WidgetFactory; zero ad-hoc widgets per micro-game (§1.8).
 ##
-## Acoplamiento: CERO. Los sistemas se buscan duck-typed en
-## /root (GameServices, EventBus, MatchManager...). Si no existen
-## (tests headless, arranque temprano), el HUD degrada en silencio y
-## expone los setters directos: set_objective / set_score / set_combo /
+## Coupling: ZERO. The systems are looked up duck-typed in
+## /root (GameServices, EventBus, MatchManager...). If they do not exist
+## (headless tests, early startup), the HUD degrades silently and
+## exposes the direct setters: set_objective / set_score / set_combo /
 ## set_match_time / show_callout.
 
 signal play_again_requested()
@@ -49,7 +49,7 @@ func _ready() -> void:
 	_match_timer.text = "5:00"
 
 
-# --- EventBus (duck-typed; ausente → sin suscripción, setters manuales) ---
+# --- EventBus (duck-typed; absent → no subscription, manual setters) ---
 
 func _connect_event_bus() -> void:
 	_event_bus = _find(&"EventBus")
@@ -107,10 +107,10 @@ func _on_style_applied(pack_id: StringName) -> void:
 	_apply_hud_theme_for_style(pack_id)
 
 
-# --- API pública (setters; usados por el bus, los tests y la integración) ---
+# --- Public API (setters; used by the bus, the tests and the integration) ---
 
-## Construye el widget de objetivo desde el HUDRecipe y muestra el
-## objetivo + flavor text (§13.1). Si recipe es null, limpia el objetivo.
+## Builds the objective widget from the HUDRecipe and shows the
+## objective + flavor text (§13.1). If recipe is null, it clears the objective.
 func set_objective(recipe: HUDRecipe, objective: String = "", flavor: String = "") -> void:
 	clear_objective()
 	if recipe == null:
@@ -134,7 +134,7 @@ func set_objective(recipe: HUDRecipe, objective: String = "", flavor: String = "
 		show_callout(String(recipe.callout_on_start))
 
 
-## Oculta el widget de objetivo (vuelta a freeroam).
+## Hides the objective widget (return to free roam).
 func clear_objective() -> void:
 	if _flavor_timer != null:
 		_flavor_timer = null
@@ -153,7 +153,7 @@ func set_score(value: int) -> void:
 	_score_value.scale = Vector2.ONE * _score_pop
 
 
-## Multiplicador del combo (widget ruidoso, §13.1).
+## Combo multiplier (loud widget, §13.1).
 func set_combo(combo: int) -> void:
 	var mult: float = 1.0 + maxi(0, combo) * _combo_step()
 	_multiplier.set_value(mult)
@@ -175,7 +175,7 @@ func _combo_step() -> float:
 	return cfg.combo_step if cfg != null else 0.25
 
 
-## Tiempo restante de partida. Pulso rojo bajo el umbral (§13.1).
+## Remaining match time. Red pulse below the threshold (§13.1).
 func set_match_time(seconds: float) -> void:
 	_match_remaining = maxf(0.0, seconds)
 	var mins := int(_match_remaining) / 60
@@ -194,7 +194,7 @@ func set_match_time(seconds: float) -> void:
 		_match_timer.modulate = UIColors.DANGER
 
 
-## Callout subtitulado (VO, §13.3: siempre visible además de la voz).
+## Subtitled callout (VO, §13.3: always visible in addition to the voice).
 func show_callout(text: String) -> void:
 	if text == "":
 		return
@@ -227,8 +227,8 @@ func _text_speed() -> float:
 	return 1.0
 
 
-## Posiciones normalizadas (0..1 viewport) de power-ups fuera de pantalla.
-## El mundo llama con las posiciones; las flechas se colocan en el borde.
+## Normalized positions (0..1 viewport) of power-ups off screen.
+## The world calls with the positions; the arrows are placed on the edge.
 func set_powerup_markers(points: PackedVector2Array) -> void:
 	var size := get_viewport().get_visible_rect().size
 	for i in mini(points.size(), _compass_arrows.size()):
@@ -242,11 +242,11 @@ func set_powerup_markers(points: PackedVector2Array) -> void:
 func apply_theme(theme: Theme) -> void:
 	if theme == null:
 		return
-	# CanvasLayer no tiene `theme`: se aplica al Root (Control).
+	# CanvasLayer has no `theme`: it is applied to the Root (Control).
 	%Root.theme = theme
 
 
-## Theme activo del HUD (para tests).
+## Active theme of the HUD (for tests).
 func active_theme() -> Theme:
 	return %Root.theme
 
@@ -261,12 +261,12 @@ func shown_callout() -> String:
 	return _callout.text if _callout != null else ""
 
 
-## True cuando el contador animado ha llegado al objetivo (para tests).
+## True when the animated counter has reached the objective (for tests).
 func score_counter_settled() -> bool:
 	return int(_score_displayed) >= _score_target
 
 
-# --- Lecturas para tests / integración ---
+# --- Reads for tests / integration ---
 
 func shown_objective() -> String:
 	return _objective_label.text
@@ -340,7 +340,7 @@ func _apply_widget_config(widget: Control, recipe: HUDRecipe) -> void:
 		widget.set_target(_target_of(recipe))
 
 
-## Target leído del ObjectiveRecipe si está presente (duck-typed).
+## Target read from the ObjectiveRecipe if it is present (duck-typed).
 func _target_of(recipe: HUDRecipe) -> int:
 	if recipe.has_meta("objective_target"):
 		var meta: Variant = recipe.get_meta("objective_target")
@@ -348,7 +348,7 @@ func _target_of(recipe: HUDRecipe) -> int:
 	return 0
 
 
-## El HUD lee la metadata del micro-juego activo del director (duck-typed).
+## The HUD reads the metadata of the active micro-game from the director (duck-typed).
 func _apply_metadata_from_director(id: StringName) -> void:
 	var director := _find(&"MinigameDirector")
 	if director == null or not director.has_method("get_metadata_for"):
@@ -374,7 +374,7 @@ func _apply_hud_theme_for_style(_pack_id: StringName) -> void:
 	apply_theme(theme)
 
 
-## Busca un sistema duck-typed en /root (GameServices primero).
+## Looks up a duck-typed system in /root (GameServices first).
 func _find(system_name: StringName) -> Object:
 	var root := get_tree().root if is_inside_tree() else null
 	if root == null:

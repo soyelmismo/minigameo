@@ -1,16 +1,16 @@
 class_name ArchetypeChase
 extends MinigameArchetype
-## Arquetipo 2 — CHASE (scaffold.md §8.1 fila 2, §8.3 fila 2).
+## Archetype 2 — CHASE (scaffold.md §8.1 row 2, §8.3 row 2).
 ##
-## Slots leídos:
-##   SpawnRecipe    → motion CHASE (o FLEE), speed, target móvil
-##   ObjectiveRecipe→ kind CHASE_CATCH (alcanzar) o SURVIVE_T (esquivar móvil)
+## Slots read:
+##   SpawnRecipe    → motion CHASE (or FLEE), speed, moving target
+##   ObjectiveRecipe→ kind CHASE_CATCH (catch) or SURVIVE_T (dodge the mover)
 ##   HUDRecipe      → TIMER
 ##   InputMode      → RUN
 ##
-## Mecánica: el objetivo móvil se desplaza con `SpawnRecipe.speed`. El jugador
-## gana al alcanzarlo (distancia <= tolerancia) dentro del tiempo; el móvil
-## persigue al jugador cuando motion = CHASE (entonces el éxito es sobrevivir).
+## Mechanic: the moving target travels at `SpawnRecipe.speed`. The player
+## wins by catching it (distance <= tolerance) within the time; the mover
+## chases the player when motion = CHASE (then success is surviving).
 
 const KIND_CHASE_CATCH := &"CHASE_CATCH"
 const KIND_SURVIVE_T := &"SURVIVE_T"
@@ -64,7 +64,7 @@ func _spawn_mover() -> void:
 	var recipe: SpawnRecipe = _meta.spawn_recipe
 	var ctx := get_context()
 	var center: Vector3 = _resolve_center()
-	# Un único móvil (count del recipe se respeta pero el gancho es uno).
+	# A single mover (the recipe count is respected, but the hook is one).
 	var node: Node = spawn_entity(center + Vector3(recipe.spawn_radius, 0.0, 0.0))
 	if node is Node3D:
 		_mover = node as Node3D
@@ -156,7 +156,7 @@ func _evaluate(player_pos: Vector3) -> void:
 			finish_fail(&"HIT")
 
 
-## Sobrevivir hasta el final es ganar en modo SURVIVE_T.
+## Surviving until the end is winning in SURVIVE_T mode.
 func on_timeout() -> void:
 	if _kind == KIND_SURVIVE_T:
 		finish_success(_time_bonus_per_s)

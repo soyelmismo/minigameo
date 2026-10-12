@@ -1,28 +1,28 @@
 extends Resource
 class_name AccessibilitySettings
-## Ajustes de accesibilidad (scaffold §13.3, AGENTS.md §8).
+## Accessibility settings (scaffold §13.3, AGENTS.md §8).
 ##
-## SettingsManager (autoload) es la fuente autoritativa y persiste vía
-## SaveSystem a `user://`. Este Resource es el modelo que edita el panel:
-## lee del manager al abrir y escribe al cerrar.
+## SettingsManager (autoload) is the authoritative source and persists via
+## SaveSystem to `user://`. This Resource is the model the panel edits:
+## it reads from the manager on open and writes on close.
 ##
-## Mapeo de claves (el nombre del campo del Resource NO coincide siempre con
+## Key mapping (the name of the Resource field does not always match the
 ## la key del manager; `subtitles_always_visible` vive como
-## "subtitles_enabled"). El mapa es datos, no magia.
+## "subtitles_enabled"). The map is data, not magic.
 
-## Intensidad de shake 0..1 (0 = desactivado, §13.3).
+## Shake intensity 0..1 (0 = disabled, §13.3).
 @export var shake_intensity: float = 1.0
-## Desactivar flashes de pantalla (§13.3).
+## Disable fullscreen flashes (§13.3).
 @export var flashes_enabled: bool = true
-## Modo indicadores de daltonismo: los objetivos/peligros reciben FORMA
+## Colorblind indicator mode: objectives/hazards get SHAPE
 ## distintiva, no solo color (§13.3).
 @export var colorblind_indicators: bool = false
-## Callouts de VO siempre visibles (subtítulos, §13.3).
+## VO callouts always visible (subtitles, §13.3).
 @export var subtitles_always_visible: bool = true
-## Velocidad de texto 0.5..2.0 (§13.3).
+## Text speed 0.5..2.0 (§13.3).
 @export var text_speed: float = 1.0
 
-## Campo del Resource -> key de SettingsManager. Fuente única del mapeo.
+## Resource field -> SettingsManager key. Single source of the mapping.
 const KEY_MAP := {
 	"shake_intensity": "shake_intensity",
 	"flashes_enabled": "flashes_enabled",
@@ -32,8 +32,8 @@ const KEY_MAP := {
 }
 
 
-## Escribe los valores actuales en SettingsManager (que persiste a disco).
-## Degrada en silencio si el manager no está presente.
+## Writes the current values to SettingsManager (which persists to disk).
+## It degrades silently if the manager is not present.
 func apply_to_settings_manager() -> void:
 	var mgr: Object = find_manager()
 	if mgr == null or not mgr.has_method("set_value"):
@@ -42,8 +42,8 @@ func apply_to_settings_manager() -> void:
 		mgr.set_value(KEY_MAP[field], get(field))
 
 
-## Lee los valores actuales desde SettingsManager.
-## Degrada en silencio si el manager no está presente.
+## Reads the current values from SettingsManager.
+## It degrades silently if the manager is not present.
 func load_from_settings_manager() -> void:
 	var mgr: Object = find_manager()
 	if mgr == null or not mgr.has_method("get_value"):

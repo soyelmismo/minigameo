@@ -1,17 +1,17 @@
 class_name ArchetypeStackTimed
 extends MinigameArchetype
-## Arquetipo 14 — STACK_TIMED (scaffold.md §8.1 fila 14, §8.3 fila 14).
+## Archetype 14 — STACK_TIMED (scaffold.md §8.1 row 14, §8.3 row 14).
 ##
-## Slots leídos:
-##   SpawnRecipe    → caída con timing (patrón WAVE)
-##   ObjectiveRecipe→ kind STACK_N, target = N piezas apiladas
+## Slots read:
+##   SpawnRecipe    → timed fall (WAVE pattern)
+##   ObjectiveRecipe→ kind STACK_N, target = N stacked pieces
 ##   HUDRecipe      → COUNTER
 ##   InputMode      → BUTTON
 ##
-## Mecánica: soltar piezas con timing. La entrada BUTTON "suelta" una pieza;
-## el motor cuenta el apilado cuando la pulsación cae en la ventana de caída
-## (`tolerance`). Cada pieza bien soltada sube la torre; una fuera de ventana
-## la derrumba parcialmente (pierde una pieza si hay alguna).
+## Mechanic: drop pieces with timing. The BUTTON input "drops" a piece;
+## the engine counts the stack when the press falls inside the drop window
+## (`tolerance`). Every piece dropped well raises the tower; one outside the
+## window partly topples it (loses a piece if there is one).
 
 const KIND_STACK_N := &"STACK_N"
 
@@ -31,7 +31,7 @@ func setup(ctx: MinigameContext) -> void:
 		_target = _meta.objective_recipe.target
 		_tolerance = _meta.objective_recipe.tolerance
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
-	# Convención de slots: `speed` del SpawnRecipe = intervalo de caída *10.
+	# Slot convention: `speed` of the SpawnRecipe = drop interval *10.
 	if _meta != null and _meta.spawn_recipe != null and _meta.spawn_recipe.speed > 0.0:
 		_drop_interval = 10.0 / maxf(1.0, _meta.spawn_recipe.speed)
 
@@ -76,7 +76,7 @@ func on_input(input_event: InputEvent) -> void:
 		pressed = (input_event as InputEventJoypadButton).pressed
 	if not pressed:
 		return
-	# Timing: distancia a la ventana de caída más cercana.
+	# Timing: distance to the nearest drop window.
 	var since: float = _drop_interval - _drop_timer
 	var dist_to_window: float = minf(since, _drop_interval - since)
 	if dist_to_window <= _tolerance:

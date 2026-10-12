@@ -22,8 +22,8 @@ func _ready() -> void:
 
 
 func _register() -> void:
-	# Resolución por path (§1.1): el identificador global del autoload no
-	# está disponible en todos los contextos de compilación.
+	# Resolution by path (§1.1): the global identifier of the autoload is
+	# not available in every compilation context.
 	var locator: Object = _resolve(&"GameServices")
 	if locator != null and locator.has_method("lookup"):
 		var core: Object = locator.lookup(&"core")

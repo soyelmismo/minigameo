@@ -1,19 +1,19 @@
 extends Control
 class_name PauseMenu
-## Menú de pausa (scaffold §13.3): resume / ajustes / salir.
+## Pause menu (scaffold §13.3): resume / settings / quit.
 ##
-## Integración:
-## - RESUME reanuda la partida (quita la pausa del árbol y de MatchManager).
-## - ACCESSIBILITY abre el `SettingsPanel` instanciado aquí (única dueña del
-##   ciclo de vida del panel, para no dejar nodos huérfanos al cerrar).
-## - QUIT cierra la partida y vuelve a título vía `MatchManager.end_match()`.
+## Integration:
+## - RESUME resumes the match (it lifts the pause of the tree and of MatchManager).
+## - ACCESSIBILITY opens the `SettingsPanel` instanced here (sole owner of the
+##   lifecycle of the panel, to avoid leaving orphan nodes when closing).
+## - QUIT closes the match and returns to the title via `MatchManager.end_match()`.
 ##
-## Navegable con teclado Y mando: los tres botones son enfocables y
-## `ui_cancel` (Esc / B) reanuda, igual que RESUME.
+## Navigable with keyboard AND gamepad: the three buttons are focusable and
+## `ui_cancel` (Esc / B) resumes, just like RESUME.
 ##
-## MatchManager NO tiene API de pausa propia: la pausa vive en el SceneTree
-## (`get_tree().paused`), así que este menú se marca PROCESS_MODE_ALWAYS para
-## seguir procesando entrada mientras el mundo está en pausa.
+## MatchManager does NOT have its own pause API: the pause lives in the SceneTree
+## (`get_tree().paused`), so this menu is marked PROCESS_MODE_ALWAYS to
+## keep processing input while the world is paused.
 
 const SERVICES_PATH := &"/root/GameServices"
 const MATCH_PATH := &"/root/MatchManager"
@@ -30,7 +30,7 @@ var _settings_scene: PackedScene = null
 
 
 func _ready() -> void:
-	# El menú debe responder con el mundo en pausa.
+	# The menu must respond with the world paused.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	PanelStyler.apply(%PausePanel, UIColors.PRIMARY, 24)
 	UIFocus.enable(self)
@@ -46,21 +46,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Reanuda el mundo y cierra este menú.
+## Resumes the world and closes this menu.
 func resume() -> void:
 	_set_paused(false)
 	hide()
 	resume_pressed.emit()
 
 
-## Pausa el mundo y toma el foco del primer botón (RESUME).
+## Pauses the world and takes the focus of the first button (RESUME).
 func open() -> void:
 	_set_paused(true)
 	show()
 	UIFocus.grab_first(self)
 
 
-## Abre el panel de ajustes. Si la escena falta, degrada sin romper.
+## Opens the settings panel. If the scene is missing, it degrades without breaking.
 func open_settings() -> void:
 	if _settings_scene == null:
 		push_warning("PauseMenu: settings scene missing at %s" % SETTINGS_SCENE_PATH)
@@ -78,7 +78,7 @@ func open_settings() -> void:
 	settings_pressed.emit()
 
 
-## Sale de la partida de vuelta a título.
+## Leaves the match back to the title.
 func quit_to_title() -> void:
 	_set_paused(false)
 	var match_mgr: Object = _resolve(MATCH_PATH)
@@ -87,7 +87,7 @@ func quit_to_title() -> void:
 	quit_pressed.emit()
 
 
-## El panel se quita del árbol al cerrar: ni un nodo huérfano (§1.4).
+## The panel is removed from the tree when closing: not a single orphan node (§1.4).
 func _on_settings_closed() -> void:
 	if _panel != null and is_instance_valid(_panel):
 		_panel.queue_free()
@@ -95,8 +95,8 @@ func _on_settings_closed() -> void:
 	UIFocus.grab_first(self)
 
 
-## Conecta la pausa al SceneTree y se lo comunica a MatchManager si algún día
-## expone su propia API de pausa (hoy no la tiene: se consulta, no se asume).
+## Connects the pause to the SceneTree and tells MatchManager about it if one day
+## it exposes its own pause API (today it does not: it is queried, not assumed).
 func _set_paused(paused: bool) -> void:
 	var tree := get_tree()
 	if tree == null:
@@ -107,7 +107,7 @@ func _set_paused(paused: bool) -> void:
 		match_mgr.set_paused(paused)
 
 
-## Resuelve un autoload por GameServices o, en su defecto, por path.
+## Resolves an autoload by GameServices or, failing that, by path.
 func _resolve(path: StringName) -> Object:
 	var root := get_tree().root
 	var services: Object = root.get_node_or_null(String(SERVICES_PATH)) as Object

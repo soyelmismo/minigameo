@@ -1,16 +1,16 @@
 class_name ArchetypeGateRace
 extends MinigameArchetype
-## Arquetipo 7 — GATE_RACE (scaffold.md §8.1 fila 7, §8.3 fila 7).
+## Archetype 7 — GATE_RACE (scaffold.md §8.1 row 7, §8.3 row 7).
 ##
-## Slots leídos:
-##   SpawnRecipe    → LINE, gates numerados
+## Slots read:
+##   SpawnRecipe    → LINE, numbered gates
 ##   ObjectiveRecipe→ kind GATES_IN_ORDER, target = N gates
 ##   HUDRecipe      → SEQUENCE
 ##   InputMode      → RUN
 ##
-## Mecánica: atravesar las compuertas EN ORDEN. Cada gate se genera sobre una
-## línea (patrón LINE del SpawnRecipe); pasar por la esperada suma, pasar por
-## una fuera de orden reinicia la secuencia (fail_on WRONG_INPUT).
+## Mechanic: pass through the gates IN ORDER. Each gate is generated along a
+## line (LINE pattern of the SpawnRecipe); passing the expected one scores,
+## passing one out of order restarts the sequence (fail_on WRONG_INPUT).
 
 const KIND_GATES_IN_ORDER := &"GATES_IN_ORDER"
 ## Archetype default for `reach_m`. Read through _slot_value(), so a
@@ -67,7 +67,7 @@ func advance(_delta: float) -> void:
 	if ctx == null or ctx.player == null or not is_instance_valid(ctx.player):
 		return
 	var player_pos: Vector3 = (ctx.player as Node3D).global_position
-	# Gate esperada = la siguiente en orden.
+	# Expected gate = the next one in order.
 	if _passed < _gate_positions.size():
 		var expected: Vector3 = _gate_positions[_passed]
 		if player_pos.distance_to(expected) <= _gate_radius:

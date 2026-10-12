@@ -1,16 +1,16 @@
 class_name ArchetypeComboChain
 extends MinigameArchetype
-## Arquetipo 8 — COMBO_CHAIN (scaffold.md §8.1 fila 8, §8.3 fila 8).
+## Archetype 8 — COMBO_CHAIN (scaffold.md §8.1 row 8, §8.3 row 8).
 ##
-## Slots leídos:
-##   SpawnRecipe    → orden secuencial (entidades numeradas)
-##   ObjectiveRecipe→ kind CHAIN_N, target = longitud de la cadena, fail_on WRONG_INPUT
+## Slots read:
+##   SpawnRecipe    → sequential order (numbered entities)
+##   ObjectiveRecipe→ kind CHAIN_N, target = chain length, fail_on WRONG_INPUT
 ##   HUDRecipe      → SEQUENCE
 ##   InputMode      → BUTTON
 ##
-## Mecánica: encadenar N acciones sin fallar. Cada acierto sube el combo
-## (`ObjectiveRecipe.combo_step` modula el multiplicador de puntos); un fallo
-## rompe la cadena y, si `fail_on` es WRONG_INPUT, termina el micro-juego.
+## Mechanic: chain N actions without failing. Each hit raises the combo
+## (`ObjectiveRecipe.combo_step` modulates the score multiplier); a miss
+## breaks the chain and, if `fail_on` is WRONG_INPUT, ends the micro-game.
 
 const KIND_CHAIN_N := &"CHAIN_N"
 
@@ -48,8 +48,8 @@ func _spawn_chain_links() -> void:
 			node.add_to_group(&"mg_chain_link")
 
 
-## Entrada BUTTON: cada pulsación es un eslabón. El orden lo garantiza el
-## jugador acertando al eslabón correcto; aquí se resuelve por proximidad.
+## BUTTON input: every press is one link. The order is guaranteed by the
+## player hitting the correct link; here it is resolved by proximity.
 func on_input(input_event: InputEvent) -> void:
 	if is_finished():
 		return
@@ -71,7 +71,7 @@ func on_input(input_event: InputEvent) -> void:
 	if best == null:
 		_break_chain(&"WRONG_INPUT")
 		return
-	# Acierto: consumir el eslabón y alargar la cadena.
+	# Hit: consume the link and lengthen the chain.
 	_chain += 1
 	bump_combo()
 	set_progress(float(_chain) / float(maxi(1, _target)))
@@ -81,7 +81,7 @@ func on_input(input_event: InputEvent) -> void:
 		finish_success(_time_bonus_per_s)
 
 
-## Rompe la cadena. Con `fail_on: WRONG_INPUT` termina el micro-juego.
+## Breaks the chain. With `fail_on: WRONG_INPUT` the micro-game ends.
 func _break_chain(reason: StringName) -> void:
 	_chain = 0
 	set_progress(0.0)

@@ -1,7 +1,7 @@
 extends Control
 class_name TimerWidget
-## Widget TIMER (scaffold §13.1): cuenta atrás con pulso rojo bajo el
-## umbral, o modo acumulado (para HOLD_ZONE_T, §8.3).
+## TIMER widget (scaffold §13.1): countdown with a red pulse below the
+## threshold, or accumulated mode (for HOLD_ZONE_T, §8.3).
 
 const MODE_COUNTDOWN := &"COUNTDOWN"
 const MODE_ACCUMULATE := &"ACCUMULATE"
@@ -38,7 +38,7 @@ func _process(delta: float) -> void:
 	_update_pulse(delta)
 
 
-## Configura el widget desde el slot (icon + color semántico).
+## Configures the widget from the slot (icon + semantic color).
 func configure(icon: Texture2D, color: Color) -> void:
 	if _icon != null:
 		if icon != null:
@@ -48,27 +48,27 @@ func configure(icon: Texture2D, color: Color) -> void:
 		_apply_outline(color)
 
 
-## Arranca la cuenta atrás desde `seconds`.
+## Starts the countdown from `seconds`.
 func set_duration(seconds: float) -> void:
 	_remaining_s = maxf(0.0, seconds)
 	mode = MODE_COUNTDOWN
 	_time_label.text = _format(_remaining_s)
 
 
-## Conmuta a modo acumulado (sube el tiempo en pantalla).
+## Switches to accumulated mode (the time on screen goes up).
 func set_accumulate_mode(enabled: bool) -> void:
 	mode = MODE_ACCUMULATE if enabled else MODE_COUNTDOWN
 	_accumulated_s = 0.0
 
 
-## Tiempo restante actual (para tests y para el HUD).
+## Current remaining time (for tests and for the HUD).
 func time_left() -> float:
 	if mode == MODE_ACCUMULATE:
 		return _accumulated_s
 	return _remaining_s
 
 
-## Texto del reloj (para tests).
+## Text of the clock (for tests).
 func time_text() -> String:
 	return _time_label.text
 

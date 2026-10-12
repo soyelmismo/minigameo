@@ -1,6 +1,6 @@
 class_name VoiceLines
 extends RefCounted
-## Locutor VO catalog (scaffold.md §2 canonical callouts, VERBATIM).
+## Announcer VO catalog (scaffold.md §2 canonical callouts, VERBATIM).
 ##
 ## Canonical line table from scaffold §2 — the strings below are the
 ## authoritative start; the VoiceDirector picks a variation per event with

@@ -1,16 +1,16 @@
 class_name ArchetypeZoneHold
 extends MinigameArchetype
-## Arquetipo 6 — ZONE_HOLD (scaffold.md §8.1 fila 6, §8.3 fila 6).
+## Archetype 6 — ZONE_HOLD (scaffold.md §8.1 row 6, §8.3 row 6).
 ##
-## Slots leídos:
-##   SpawnRecipe    → 1 zona (no entidades); spawn_radius = radio de la zona
-##   ObjectiveRecipe→ kind HOLD_ZONE_T, target = segundos acumulados en zona
+## Slots read:
+##   SpawnRecipe    → 1 zone (no entities); spawn_radius = zone radius
+##   ObjectiveRecipe→ kind HOLD_ZONE_T, target = seconds accumulated in the zone
 ##   HUDRecipe      → TIMER
 ##   InputMode      → RUN
 ##
-## Mecánica: acumular `target` segundos dentro del radio de la zona. El
-## temporizador solo avanza mientras el jugador esté dentro; salir lo pausa
-## (no lo resetea, para no castigar el micro-desplazamiento).
+## Mechanic: accumulate `target` seconds inside the zone radius. The
+## timer only advances while the player is inside; leaving pauses it
+## (it does not reset it, to avoid punishing micro-movement).
 
 const KIND_HOLD_ZONE_T := &"HOLD_ZONE_T"
 const DEFAULT_ZONE_RADIUS := 6.0
@@ -39,7 +39,7 @@ func start() -> void:
 	_spawn_zone()
 
 
-## La zona es un marcador visual (Area3D cuando hay escena, si no un Node3D).
+## The zone is a visual marker (Area3D when there is a scene, otherwise a Node3D).
 func _spawn_zone() -> void:
 	var ctx := get_context()
 	if ctx == null:

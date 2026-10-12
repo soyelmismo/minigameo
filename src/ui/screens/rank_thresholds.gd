@@ -1,12 +1,12 @@
 class_name RankThresholds
 extends Resource
-## Vista de los umbrales de rank (scaffold.md §6.3).
+## View of the rank thresholds (scaffold.md §6.3).
 ##
-## FUENTE ÚNICA DE VERDAD: `GameConfig.tres` (§1.3, cero números
-## hardcodeados). Este recurso existe solo para que la UI pueda mostrar
-## umbrales sin acoplarse a ScoreDirector; sus valores se leen de
-## GameConfig en `sync_from_config()`. NO introducir números aquí:
-## cambiar el balance es editar `GameConfig.tres`.
+## SINGLE SOURCE OF TRUTH: `GameConfig.tres` (§1.3, zero hardcoded
+## numbers). This resource exists only so the UI can show the
+## thresholds without coupling to ScoreDirector; its values are read from
+## GameConfig in `sync_from_config()`. DO NOT introduce numbers here:
+## changing the balance means editing `GameConfig.tres`.
 
 var c_min: int = 5000
 var b_min: int = 12000
@@ -15,7 +15,7 @@ var s_min: int = 45000
 var s_plus_min: int = 70000
 
 
-## Refresca los umbrales desde GameConfig (llamar al cargar la UI).
+## Refreshes the thresholds from GameConfig (call when loading the UI).
 func sync_from_config() -> void:
 	var cfg: Resource = load("res://src/core/config/game_config.tres") as Resource
 	if cfg == null:

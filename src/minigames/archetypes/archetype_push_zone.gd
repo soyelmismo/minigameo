@@ -1,17 +1,17 @@
 class_name ArchetypePushZone
 extends MinigameArchetype
-## Arquetipo 11 — PUSH_ZONE (scaffold.md §8.1 fila 11, §8.3 fila 11).
+## Archetype 11 — PUSH_ZONE (scaffold.md §8.1 row 11, §8.3 row 11).
 ##
-## Slots leídos:
-##   SpawnRecipe    → física, motion STATIC, count = objetos a empujar
-##   ObjectiveRecipe→ kind PUSH_N_TO_ZONE, target = N objetos en la zona
+## Slots read:
+##   SpawnRecipe    → physics, motion STATIC, count = objects to push
+##   ObjectiveRecipe→ kind PUSH_N_TO_ZONE, target = N objects in the zone
 ##   HUDRecipe      → COUNTER
 ##   InputMode      → RUN | STICK
 ##
-## Mecánica: los objetos se consideran "empujados" cuando el jugador los
-## acerca; un objeto cuenta al entrar en el radio de la zona de entrega.
-## La física real la aporta el prop (`RigidBody3D`) en la escena; este motor
-## solo evalúa la condición de victoria de forma data-driven.
+## Mechanic: the objects count as "pushed" when the player moves them
+## closer; an object counts when it enters the delivery zone radius.
+## The real physics come from the prop (`RigidBody3D`) in the scene; this
+## engine only evaluates the victory condition in a data-driven way.
 
 const KIND_PUSH_N_TO_ZONE := &"PUSH_N_TO_ZONE"
 ## Archetype default for `reach_m`. Read through _slot_value(), so a
@@ -56,7 +56,7 @@ func _spawn_pushables() -> void:
 			node.add_to_group(&"mg_pushable")
 
 
-## La zona de entrega es un marcador en el lado opuesto de la arena.
+## The delivery zone is a marker on the opposite side of the arena.
 func _spawn_delivery_zone() -> void:
 	var ctx := get_context()
 	if ctx == null:

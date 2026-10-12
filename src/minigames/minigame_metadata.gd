@@ -1,42 +1,42 @@
 class_name MinigameMetadata
 extends Resource
-## La receta de un micro-juego (scaffold.md §7.3).
+## The recipe of a micro-game (scaffold.md §7.3).
 ##
-## Este Resource es el corazón del data-driven design: un micro-juego es un
-## `.tres` de este tipo. NO se añaden campos específicos de micro-juego — la
-## variedad vive en los slots (composición), no en campos nuevos. Ver §8.0.
+## This Resource is the heart of the data-driven design: a micro-game is a
+## `.tres` of this type. NO micro-game-specific fields are added — the
+## variety lives in the slots (composition), not in new fields. See §8.0.
 
-# --- Identidad (UI + catálogo) ---
+# --- Identity (UI + catalog) ---
 @export var id: StringName = &""                  # "token_rush"
 @export var display_name: String = ""             # "Token Rush"
 @export var archetype: StringName = &""           # "COLLECT_RUSH"
 @export var duration_s: float = 20.0              # 10..30
 @export var base_score: int = 1000
-@export var weight: float = 1.0                   # frecuencia en la ruleta
+@export var weight: float = 1.0                   # frequency in the roulette
 @export var theme_tag: StringName = &"HYBRID"     # AI | LIFE | HYBRID
 
-# --- Contenido del jugador (inglés) ---
+# --- Player-facing content (English) ---
 @export var objective_text: String = ""           # "Grab tokens before it forgets!"
-@export var flavor_text: String = ""              # chiste 1 línea
+@export var flavor_text: String = ""              # 1-line joke
 @export var fail_lines: PackedStringArray = PackedStringArray()
 
-# --- Look & sonido (reutiliza contratos globales, no duplica) ---
-@export var style_pack_id: StringName = &""       # "" = estilo base del mundo
+# --- Look & sound (reuses global contracts, does not duplicate) ---
+@export var style_pack_id: StringName = &""       # "" = base style of the world
 @export var music_state: StringName = &"PEAK"
 
-# --- Slots de composición (ver §8.0) ---
+# --- Composition slots (see §8.0) ---
 @export var input_mode: StringName = &"RUN"       # RUN | BUTTON | STICK | LOOK | TAP
-@export var spawn_recipe: SpawnRecipe = null      # QUÉ entidades aparecen y cómo
-@export var objective_recipe: ObjectiveRecipe = null  # QUÉ hay que hacer
-@export var hud_recipe: HUDRecipe = null          # CÓMO se presenta el objetivo
-@export var difficulty_curve: Curve = null        # cómo escala con ctx.difficulty
+@export var spawn_recipe: SpawnRecipe = null      # WHAT entities appear and how
+@export var objective_recipe: ObjectiveRecipe = null  # WHAT has to be done
+@export var hud_recipe: HUDRecipe = null          # HOW the objective is presented
+@export var difficulty_curve: Curve = null        # how it scales with ctx.difficulty
 
-# --- Etiquetas ---
+# --- Tags ---
 @export var tags: PackedStringArray = PackedStringArray()
 
 
-## Validación mínima usada por el registro (§7.7) y por los tests.
-## Devuelve la lista de problemas encontrados (vacía = válido).
+## Minimal validation used by the registry (§7.7) and by the tests.
+## Returns the list of problems found (empty = valid).
 func validate() -> PackedStringArray:
 	var problems := PackedStringArray()
 	if id == &"":

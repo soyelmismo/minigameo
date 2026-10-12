@@ -1,7 +1,7 @@
 extends Control
 class_name MultiplierWidget
-## Widget MULTIPLIER (scaffold §13.1): "x3.5" grande y ruidoso;
-## scale-punch al subir.
+## MULTIPLIER widget (scaffold §13.1): a big, loud "x3.5";
+## scale-punch on rise.
 
 @export var cfg: HUDConfig = null
 
@@ -22,7 +22,7 @@ func _ready() -> void:
 	_value_label.text = "x1.0"
 
 
-## Establece el multiplicador. Subir dispara el scale-punch (§13.2).
+## Sets the multiplier. Rising triggers the scale-punch (§13.2).
 func set_value(new_value: float) -> void:
 	var rose: bool = new_value > _value
 	_value = new_value
@@ -31,17 +31,17 @@ func set_value(new_value: float) -> void:
 		_punch()
 
 
-## Multiplicador actual (para tests).
+## Current multiplier (for tests).
 func value() -> float:
 	return _value
 
 
-## Texto del multiplicador (para tests).
+## Text of the multiplier (for tests).
 func value_text() -> String:
 	return _value_label.text
 
 
-## Escala actual del número (para tests del punch).
+## Current scale of the number (for the punch tests).
 func label_scale() -> float:
 	return _value_label.scale.x
 

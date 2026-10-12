@@ -1,19 +1,19 @@
 class_name SpawnRecipe
 extends Resource
-## QUÉ aparece en la arena y cómo se comporta (scaffold.md §7.3.1).
+## WHAT appears in the arena and how it behaves (scaffold.md §7.3.1).
 ##
-## Interpretado por los arquetipos según la tabla §8.3. Un micro-juego nuevo
-## con spawns ya cubiertos es un `.tres` — cero código.
+## Interpreted by the archetypes according to the table in §8.3. A new micro-game
+## with spawns already covered is one `.tres` — zero code.
 
-@export var entity_scene: PackedScene = null  # prop del micro-juego (token, GPU...)
+@export var entity_scene: PackedScene = null  # prop of the micro-game (token, GPU...)
 @export var count: int = 12
 @export var count_scales_with_difficulty: bool = true
-@export var spawn_radius: float = 18.0        # metros alrededor del jugador
+@export var spawn_radius: float = 18.0        # metres around the player
 @export var spawn_pattern: StringName = &"SCATTER"  # SCATTER | RING | GRID | LINE | WAVE
 @export var motion: StringName = &"STATIC"    # STATIC | ORBIT | FLEE | CHASE | FALL
 @export var speed: float = 4.0
-@export var lifetime_s: float = -1.0          # -1 = hasta recogerse/impactar
-@export var respawn: bool = false             # reaparición tras recogerse
+@export var lifetime_s: float = -1.0          # -1 = until it is picked up / hit
+@export var respawn: bool = false             # respawn after being picked up
 @export var pool_group: StringName = &"mg_entity"
 ## Presentation of a spawned entity (§1.3 data, not code): the ONE generic
 ## `minigame_entity.tscn` reads these so a `.tres` decides how its pickup looks
@@ -25,7 +25,7 @@ extends Resource
 
 
 ## Recuento efectivo tras aplicar la curva de dificultad del contexto.
-## La dificultad 0..1 escala el conteo hasta +50% cuando así se declara.
+## Difficulty 0..1 scales the count up to +50% when declared that way.
 func resolve_count(difficulty: float) -> int:
 	if not count_scales_with_difficulty:
 		return maxi(1, count)

@@ -1,19 +1,19 @@
 class_name UIFocus
 extends RefCounted
-## Accesibilidad de navegación (AGENTS.md §8, scaffold §13.3).
+## Navigation accessibility (AGENTS.md §8, scaffold §13.3).
 ##
-## Toda pantalla debe poder recorrerse con teclado Y mando. Godot resuelve
-## los vecinos de foco implícitamente por el orden de los contenedores, así
-## que basta con marcar cada control interactivo como enfocable
+## Every screen must be traversable with keyboard AND gamepad. Godot resolves
+## the focus neighbours implicitly by the order of the containers, so
+## it is enough to mark every interactive control as focusable
 ## (`focus_mode = FOCUS_ALL`): flechas / D-pad mueven el foco y `ui_accept`
 ## (Enter, A/X) activa. Sin esto los HSlider y CheckButton son inalcanzables
-## con mando aunque haya botones.
+## with a gamepad even when there are buttons.
 ##
-## Helper puro (RefCounted) para que las pantallas lo apliquen en `_ready`
-## y los tests puedan verificarlo sin GPU.
+## Pure helper (RefCounted) so the screens apply it in `_ready`
+## and the tests can verify it without a GPU.
 
-## Tipos de control que deben entrar en la cadencia de foco. Los Label y
-## Panel son decorativos: enfocarlos ensucia la navegación.
+## Control types that must enter the focus cycle. Labels and
+## Panels are decorative: focusing them dirties the navigation.
 const FOCUSABLE_CLASSES: Array[StringName] = [
 	&"Button",
 	&"CheckButton",
@@ -25,8 +25,8 @@ const FOCUSABLE_CLASSES: Array[StringName] = [
 ]
 
 
-## Marca como enfocables todos los controles interactivos del subárbol.
-## Idempotente: llamarlo dos veces no cambia nada.
+## Marks as focusable every interactive control in the subtree.
+## Idempotent: calling it twice changes nothing.
 static func enable(root: Node) -> int:
 	var marked: int = 0
 	for node: Node in _walk(root):
@@ -40,7 +40,7 @@ static func enable(root: Node) -> int:
 	return marked
 
 
-## True si la clase del control participa en la navegación.
+## True if the control class participates in the navigation.
 static func is_focusable_kind(control: Control) -> bool:
 	for kind: StringName in FOCUSABLE_CLASSES:
 		if control.is_class(String(kind)):
@@ -48,7 +48,7 @@ static func is_focusable_kind(control: Control) -> bool:
 	return false
 
 
-## Todos los controles enfocables del subárbol, en orden de árbol.
+## Every focusable control in the subtree, in tree order.
 static func collect(root: Node) -> Array[Control]:
 	var out: Array[Control] = []
 	for node: Node in _walk(root):
@@ -57,8 +57,8 @@ static func collect(root: Node) -> Array[Control]:
 	return out
 
 
-## Lleva el foco al primer control enfocable. Devuelve el nodo enfocado
-## (null si la pantalla no tiene ninguno: se degrada sin romper).
+## Moves the focus to the first focusable control. It returns the focused node
+## (null if the screen has none: it degrades without breaking).
 static func grab_first(root: Node) -> Control:
 	var candidates: Array[Control] = collect(root)
 	if candidates.is_empty():

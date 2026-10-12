@@ -1,11 +1,11 @@
 class_name HudThemeFactory
 extends RefCounted
-## Genera las variantes de tema HUD por style pack (scaffold §13.2).
+## Generates the HUD theme variants per style pack (scaffold §13.2).
 ##
-## Las 12 paletas salen de §9; cada pack referencia su hud_theme
-## (StylePack.hud_theme). Los .tres se materializan con
+## The 12 palettes come from §9; every pack references its hud_theme
+## (StylePack.hud_theme). The .tres are materialized with
 ## assets/ui/generate_icons.gd o el comando de themes; esta clase es la
-## fuente reproducible usada por StyleDirector cuando el pack no trae uno.
+## reproducible source used by StyleDirector when the pack does not bring one.
 
 ## Paletas de §9 (top-level: acento del HUD; panel: fondo).
 const _PALETTES := {
@@ -24,7 +24,7 @@ const _PALETTES := {
 }
 
 
-## Theme para un pack. Desconocido → tema base (§13.2 degradación).
+## Theme for a pack. Unknown → base theme (§13.2 degradation).
 static func theme_for(pack_id: StringName) -> Theme:
 	var pal: PackedColorArray = _PALETTES.get(pack_id, PackedColorArray([UIColors.PRIMARY, UIColors.PANEL]))
 	var accent: Color = pal[0]

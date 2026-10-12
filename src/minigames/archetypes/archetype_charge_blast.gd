@@ -1,22 +1,22 @@
 class_name ArchetypeChargeBlast
 extends MinigameArchetype
-## Arquetipo 10 — CHARGE_BLAST (scaffold.md §8.1 fila 10, §8.3 fila 10).
+## Archetype 10 — CHARGE_BLAST (scaffold.md §8.1 row 10, §8.3 row 10).
 ##
-## Slots leídos:
+## Slots read:
 ##   SpawnRecipe    → 1 proyectil
-##   ObjectiveRecipe→ kind CHARGE_RELEASE, target = N soltados, tolerance = ventana
+##   ObjectiveRecipe→ kind CHARGE_RELEASE, target = N releases, tolerance = window
 ##   HUDRecipe      → PROGRESS
 ##   InputMode      → BUTTON
 ##
-## Mecánica: mantener pulsado carga un medidor 0..1; soltar dentro de la
-## ventana óptima (centro ± `tolerance`) suma acierto. Soltar fuera gasta el
-## intento. El medidor sube a velocidad constante mientras se mantiene.
+## Mechanic: holding the button charges a 0..1 meter; releasing inside the
+## optimal window (center ± `tolerance`) scores a hit. Releasing outside spends
+## the attempt. The meter rises at a constant rate while the button is held.
 
 const KIND_CHARGE_RELEASE := &"CHARGE_RELEASE"
 ## Archetype default for `charge_rate`. Read through _slot_value(), so a
 ## `.tres` that fills ObjectiveRecipe.charge_rate overrides it (§1.3: tuning is
 ## data, never magic numbers in gameplay).
-const DEFAULT_CHARGE_RATE := 1.0  # unidades/segundo de carga
+const DEFAULT_CHARGE_RATE := 1.0  # charge units per second
 
 var _blasts: int = 0
 var _charge_rate: float = DEFAULT_CHARGE_RATE

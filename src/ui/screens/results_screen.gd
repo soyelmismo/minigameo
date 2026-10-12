@@ -1,18 +1,18 @@
 extends Control
 class_name ResultsScreen
-## Pantalla de resultados (scaffold §13.2): rank D..S+ enorme, desglose de
-## score, récord, PLAY AGAIN. Humor según rank (§2): celebración en S+,
-## silencio incómodo en D.
+## Results screen (scaffold §13.2): huge rank D..S+, breakdown of
+## score, record, PLAY AGAIN. Humor according to rank (§2): celebration on S+,
+## awkward silence on D.
 ##
-## Integración:
-## - `submit(total)` registra el score en `SaveSystem.submit_score(score, rank)`
-##   (única puerta de persistencia de récords).
-## - PLAY AGAIN reinicia vía `MatchManager.start_match()` y resetea ScoreDirector.
-## - El rank sale de `ScoreDirector.rank_for_score()` cuando existe (fuente
-##   autoritativa, scaffold §6.3); si no, de los umbrales de
-##   `rank_thresholds.tres` (datos, nunca hardcodeados).
+## Integration:
+## - `submit(total)` records the score in `SaveSystem.submit_score(score, rank)`
+##   (the only door to record persistence).
+## - PLAY AGAIN restarts via `MatchManager.start_match()` and resets ScoreDirector.
+## - The rank comes from `ScoreDirector.rank_for_score()` when it exists (the
+##   authoritative source, scaffold §6.3); otherwise from the thresholds of
+##   `rank_thresholds.tres` (data, never hardcoded).
 ##
-## El locutor es sarcástico pero NUNCA cruel (§1.9, §2).
+## The announcer is sarcastic but NEVER cruel (§1.9, §2).
 
 const SERVICES_PATH := &"/root/GameServices"
 const MATCH_PATH := &"/root/MatchManager"
@@ -48,8 +48,8 @@ func _ready() -> void:
 	_play_again.pressed.connect(_on_play_again)
 
 
-## Muestra los resultados. `total` es el score final; `best` el récord previo
-## (se compara para mostrar NEW RECORD).
+## Shows the results. `total` is the final score; `best` the previous record
+## (it is compared to show NEW RECORD).
 func show_results(total: int, best: int = 0, breakdown: Dictionary = {}) -> void:
 	var rank: StringName = rank_for(total)
 	_rank_label.text = String(rank)
@@ -67,7 +67,7 @@ func show_results(total: int, best: int = 0, breakdown: Dictionary = {}) -> void
 	UIFocus.grab_first(self)
 
 
-## Registra el score en SaveSystem. Devuelve true si fue nuevo récord.
+## Records the score in SaveSystem. Returns true if it was a new record.
 func submit(total: int) -> bool:
 	var rank: StringName = rank_for(total)
 	var save: Object = _resolve(SAVE_PATH)
@@ -78,12 +78,12 @@ func submit(total: int) -> bool:
 	return is_record
 
 
-## Rank autoritativo: los umbrales de `rank_thresholds.tres` (datos, brief:
-## "úsalos, no los reescribas"). ScoreDirector solo entra si no hay umbrales.
+## Authoritative rank: the thresholds of `rank_thresholds.tres` (data, brief:
+## "use them, do not rewrite them"). ScoreDirector only comes in if there are no
 ##
-## NOTA: los umbrales viven en `GameConfig.tres` (§1.3, fuente única).
-## Este recurso se sincroniza desde allí en `_ready` para que la UI nunca
-## tenga una copia desincronizada del balance.
+## NOTE: the thresholds live in `GameConfig.tres` (§1.3, single source).
+## This resource is synchronized from there in `_ready` so the UI never
+## has an out-of-sync copy of the balance.
 func rank_for(score: int) -> StringName:
 	if thresholds != null:
 		thresholds.sync_from_config()
@@ -94,7 +94,7 @@ func rank_for(score: int) -> StringName:
 	return &"D"
 
 
-## PLAY AGAIN: resetea el score y reinicia la partida.
+## PLAY AGAIN: it resets the score and restarts the match.
 func _on_play_again() -> void:
 	var score_dir: Object = _resolve(SCORE_PATH)
 	if score_dir != null and score_dir.has_method("reset"):
@@ -105,27 +105,27 @@ func _on_play_again() -> void:
 	play_again_pressed.emit()
 
 
-## Rank mostrado (para tests).
+## Rank shown (for tests).
 func rank_text() -> String:
 	return _rank_label.text
 
 
-## True si se muestra el aviso de nuevo récord (para tests).
+## True if the new record notice is shown (for tests).
 func new_record_visible() -> bool:
 	return _new_record.visible
 
 
-## Línea de humor del rank (para tests).
+## Rank humor line (for tests).
 func flavor_text() -> String:
 	return _flavor_label.text
 
 
-## Línea del total (para tests).
+## Total line (for tests).
 func total_text() -> String:
 	return _total_label.text
 
 
-## Línea del récord (para tests).
+## Record line (for tests).
 func record_text() -> String:
 	return _best_label.text
 
@@ -144,7 +144,7 @@ func _apply_rank_color(rank: StringName) -> void:
 			_rank_label.modulate = UIColors.DANGER
 
 
-## Humor por rank (§2: el locutor es sarcástico pero NUNCA cruel).
+## Humor by rank (§2: the announcer is sarcastic but NEVER cruel).
 func flavor_for(rank: StringName) -> String:
 	match rank:
 		&"S+":
@@ -161,7 +161,7 @@ func flavor_for(rank: StringName) -> String:
 			return "Well. You tried. Did you though?"
 
 
-## Resuelve un autoload por GameServices o, en su defecto, por path.
+## Resolves an autoload by GameServices or, failing that, by path.
 func _resolve(path: StringName) -> Object:
 	var root := get_tree().root
 	var services: Object = root.get_node_or_null(String(SERVICES_PATH)) as Object

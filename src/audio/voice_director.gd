@@ -1,5 +1,5 @@
 extends Node
-## Locutor arcade VO director (scaffold.md §6.10 / §2).
+## Arcade announcer VO director (scaffold.md §6.10 / §2).
 ##
 ## - One VO line at a time: higher priority preempts, equal priority queues.
 ## - Anti-spam cooldown per event (data-driven, default ~3s).

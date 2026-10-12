@@ -1,13 +1,13 @@
 class_name MinigameArchetype
 extends Minigame
-## Base compartida por los 14 arquetipos (scaffold.md §8.1, §8.3).
+## Base shared by the 14 archetypes (scaffold.md §8.1, §8.3).
 ##
-## Centraliza la maquinaria repetida —timer de duración, progreso, emisión de
-## eventos de juice, spawns según `SpawnRecipe`, limpieza huérfana— para que
-## cada arquetipo solo declare su MECÁNICA leyendo sus slots. Ningún arquetipo
-## hace `if minigame_id == "..."`: la variación vive en los datos.
+## Centralizes the repeated machinery —duration timer, progress, emission of
+## juice events, spawns according to `SpawnRecipe`, orphan cleanup— so that
+## each archetype only declares its MECHANIC by reading its slots. No archetype
+## does `if minigame_id == "..."`: the variation lives in the data.
 
-# --- Patrones de spawn (§7.3.1) ---
+# --- Spawn patterns (§7.3.1) ---
 const PATTERN_SCATTER := &"SCATTER"
 const PATTERN_RING := &"RING"
 const PATTERN_GRID := &"GRID"
@@ -26,16 +26,16 @@ var _elapsed: float = 0.0
 var _finished: bool = false
 var _combo_max: int = 0
 
-## Nodos creados por el micro-juego. El director los libera en teardown,
-## pero el arquetipo también sabe liberarlos solo (defensa en profundidad).
+## Nodes created by the micro-game. The director frees them in teardown,
+## but the archetype also knows how to free them on its own (defence in depth).
 var _spawned: Array[Node] = []
 
 
-# --- Ciclo de vida ---
+# --- Lifecycle ---
 
 func setup(ctx: MinigameContext) -> void:
 	super.setup(ctx)
-	# La metadata llega por el contexto (§7.2); solo si falta se busca.
+	# The metadata arrives through the context (§7.2); it is only looked up if missing.
 	_meta = ctx.metadata if ctx != null and ctx.metadata != null else get_metadata()
 	_duration = _meta.duration_s if _meta != null else 20.0
 	# §7.1 hard cap: a micro-game must never outlive the match it runs in.
@@ -71,8 +71,8 @@ func start() -> void:
 	emit_event(&"start", {"duration_s": _duration})
 
 
-## Avanza el reloj del micro-juego y delega en el arquetipo.
-## Devuelve true si el arquetipo consumió el frame.
+## Advances the micro-game clock and delegates to the archetype.
+## Returns true if the archetype consumed the frame.
 func update(delta: float) -> void:
 	if _finished:
 		return
@@ -82,25 +82,25 @@ func update(delta: float) -> void:
 		on_timeout()
 
 
-# --- API para arquetipos ---
+# --- API for archetypes ---
 
-## Un paso de mecánica específica. Implementado por cada arquetipo.
+## One step of specific mechanic. Implemented by each archetype.
 func advance(_delta: float) -> void:
 	pass
 
 
-## Acción por defecto al agotarse `duration_s`. Los arquetipos con éxito por
-## supervivencia la sobreescriben.
+## Default action when `duration_s` runs out. The archetypes with success by
+## survival override it.
 func on_timeout() -> void:
 	finish_fail(&"TIMEOUT")
 
 
-## Tiempo consumido.
+## Elapsed time.
 func get_elapsed() -> float:
 	return _elapsed
 
 
-## Tiempo restante del micro-juego (nunca negativo).
+## Remaining time of the micro-game (never negative).
 func get_time_left() -> float:
 	return maxf(0.0, _duration - _elapsed)
 
@@ -113,24 +113,24 @@ func is_finished() -> bool:
 	return _finished
 
 
-## Marca un nuevo máximo de combo y emite el evento de milestone.
+## Marks a new combo maximum and emits the milestone event.
 func bump_combo() -> int:
 	_combo_max += 1
 	emit_event(&"hit", {"combo": _combo_max})
 	return _combo_max
 
 
-## Emite progreso normalizado 0..1 por la señal del contrato (§7.1).
+## Emits normalized progress 0..1 through the contract signal (§7.1).
 func set_progress(normalized: float) -> void:
 	progress_changed.emit(clampf(normalized, 0.0, 1.0))
 
 
-## Emite un hook de juice/audio/VO (§7.1 signal `event`).
+## Emits a juice/audio/VO hook (§7.1 signal `event`).
 func emit_event(kind: StringName, payload: Dictionary = {}) -> void:
 	event.emit(kind, payload)
 
 
-## Cierra el micro-juego con éxito, calculando el bonus de tiempo sobrante.
+## Ends the micro-game successfully, computing the leftover time bonus.
 func finish_success(time_bonus_per_s: int = 0) -> void:
 	if _finished:
 		return
@@ -142,7 +142,7 @@ func finish_success(time_bonus_per_s: int = 0) -> void:
 	finish_with(MinigameResult.make(true, base, bonus, _combo_max))
 
 
-## Cierra el micro-juego con fracaso (`fail_on` del ObjectiveRecipe).
+## Ends the micro-game in failure (`fail_on` of the ObjectiveRecipe).
 func finish_fail(reason: StringName) -> void:
 	if _finished:
 		return
@@ -152,10 +152,10 @@ func finish_fail(reason: StringName) -> void:
 	finish_with(MinigameResult.make(false, 0, 0, _combo_max, reason))
 
 
-# --- Spawning (motor genérico, reutilizado por todos los arquetipos) ---
+# --- Spawning (generic engine, reused by all the archetypes) ---
 
-## Posición de spawn según el patrón declarado en el SpawnRecipe.
-## Determinista: usa `ctx.rng` cuando está disponible.
+## Spawn position according to the pattern declared in the SpawnRecipe.
+## Deterministic: it uses `ctx.rng` when available.
 func spawn_point(index: int, total: int, center: Vector3, radius: float) -> Vector3:
 	var ctx := get_context()
 	var rng: Object = ctx.rng if ctx != null else null
@@ -200,8 +200,8 @@ func spawn_point(index: int, total: int, center: Vector3, radius: float) -> Vect
 			return center + jitter
 
 
-## Instancia `entity_scene` del SpawnRecipe en la posición dada y la registra
-## como huérfana a limpiar. Devuelve null si no hay escena o padre.
+## Instances `entity_scene` from the SpawnRecipe at the given position and
+## registers it as an orphan to be cleaned up. Returns null if there is no
 func spawn_entity(at: Vector3) -> Node:
 	var ctx := get_context()
 	if ctx == null or ctx.world_root == null:
@@ -256,7 +256,7 @@ func _set_export(node: Node, field: StringName, value: Variant) -> void:
 		node.set(field, value)
 
 
-## Libera todos los nodos creados por este micro-juego. Idempotente.
+## Frees all the nodes created by this micro-game. Idempotent.
 func clear_spawned() -> void:
 	for node: Node in _spawned:
 		if is_instance_valid(node):

@@ -1,9 +1,9 @@
 extends Control
 class_name CounterWidget
-## Widget COUNTER (scaffold §13.1): "N / target" + icono + pop al subir.
+## COUNTER widget (scaffold §13.1): "N / target" + icon + pop on rise.
 ##
-## Se parametriza por HUDRecipe (color_hint, icon); el HUD le pasa los
-## contadores. Cero lógica específica de micro-juego.
+## It is parametrized by HUDRecipe (color_hint, icon); the HUD passes it the
+## counters. Zero micro-game-specific logic.
 
 @export var cfg: HUDConfig = null
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	_value_label.text = "0"
 
 
-## Configura el widget desde el slot (icon + color semántico).
+## Configures the widget from the slot (icon + semantic color).
 func configure(icon: Texture2D, color: Color) -> void:
 	if _icon != null:
 		if icon != null:
@@ -36,12 +36,12 @@ func configure(icon: Texture2D, color: Color) -> void:
 		_apply_outline(color)
 
 
-## Establece el objetivo (target) mostrado tras la barra.
+## Sets the objective (target) shown after the bar.
 func set_target(target: int) -> void:
 	_target_label.text = "/ %d" % target
 
 
-## Establece el contador. Subir el contador dispara el pop (§13.2).
+## Sets the counter. Raising the counter triggers the pop (§13.2).
 func set_value(value: int) -> void:
 	var previous := int(_value_label.text)
 	_value_label.text = str(value)
@@ -49,17 +49,17 @@ func set_value(value: int) -> void:
 		pop()
 
 
-## Texto del contador (para tests).
+## Text of the counter (for tests).
 func value_text() -> String:
 	return _value_label.text
 
 
-## Escala actual del número (para tests del pop).
+## Current scale of the number (for the pop tests).
 func value_scale() -> float:
 	return _value_label.scale.x
 
 
-## Etiqueta "N / target" (para tests).
+## "N / target" label (for tests).
 func target_text() -> String:
 	return _target_label.text
 

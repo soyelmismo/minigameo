@@ -1,8 +1,8 @@
 extends Control
 class_name RouletteUI
-## Anuncio de la ruleta (scaffold §13.2): momento dramático a pantalla
-## completa con el display_name + objective_text + flavor_text del
-## micro-juego ANTES del arranque. Duración y textos salen de los datos.
+## Roulette announcement (scaffold §13.2): a dramatic full-screen
+## moment with the display_name + objective_text + flavor_text of the
+## micro-game BEFORE the start. Duration and texts come from the data.
 
 signal announce_finished()
 
@@ -25,7 +25,7 @@ func _ready() -> void:
 	visible = false
 
 
-## Muestra el anuncio con los textos del micro-juego elegido.
+## Shows the announcement with the texts of the chosen micro-game.
 func announce(display_name: String, objective_text: String, flavor_text: String) -> void:
 	_name_label.text = display_name.to_upper()
 	_objective_label.text = objective_text
@@ -39,7 +39,7 @@ func announce(display_name: String, objective_text: String, flavor_text: String)
 
 
 ## Construye el anuncio desde una MinigameMetadata (duck-typed: si el
-## objeto no trae los campos, degrada a texto vacío sin romper).
+## object does not carry the fields, it degrades to empty text without breaking).
 func announce_from_metadata(meta: Object) -> void:
 	if meta == null:
 		return
@@ -49,7 +49,7 @@ func announce_from_metadata(meta: Object) -> void:
 	announce(name_part, objective_part, flavor_part)
 
 
-## Textos actuales (para tests).
+## Current texts (for tests).
 func name_text() -> String:
 	return _name_label.text
 

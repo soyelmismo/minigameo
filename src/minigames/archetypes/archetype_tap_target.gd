@@ -1,16 +1,16 @@
 class_name ArchetypeTapTarget
 extends MinigameArchetype
-## Arquetipo 4 — TAP_TARGET (scaffold.md §8.1 fila 4, §8.3 fila 4).
+## Archetype 4 — TAP_TARGET (scaffold.md §8.1 row 4, §8.3 row 4).
 ##
-## Slots leídos:
-##   SpawnRecipe    → SCATTER, lifetime corto
-##   ObjectiveRecipe→ kind TAP_N, target = N aciertos, fail_on TIMEOUT
+## Slots read:
+##   SpawnRecipe    → SCATTER, short lifetime
+##   ObjectiveRecipe→ kind TAP_N, target = N hits, fail_on TIMEOUT
 ##   HUDRecipe      → COUNTER
 ##   InputMode      → LOOK | TAP
 ##
-## Gancho: acertar N objetivos. La entrada se resuelve por `on_input` con
-## raycast desde la cámara; si el raycast falla, se usa el objetivo más cercano
-## al punto pulsado (fallback documentado).
+## Hook: hit N targets. The input is resolved by `on_input` with
+## a raycast from the camera; if the raycast misses, the target closest to the
+## tapped point is used (documented fallback).
 
 const KIND_TAP_N := &"TAP_N"
 
@@ -49,15 +49,15 @@ func _spawn_targets() -> void:
 			node.add_to_group(&"mg_target")
 
 
-## Resuelve un toque: primero por raycast desde la cámara; si no acierta a
-## ningún objetivo, cae al objetivo más cercano al rayo (fallback LOOK/TAP).
+## Resolves a tap: first by raycast from the camera; if it hits
+## no target, it falls back to the target closest to the ray (LOOK/TAP fallback).
 func on_input(input_event: InputEvent) -> void:
 	if is_finished():
 		return
 	if input_event is InputEventMouseButton and (input_event as InputEventMouseButton).pressed:
 		_try_hit_at((input_event as InputEventMouseButton).position)
 	elif input_event is InputEventKey and (input_event as InputEventKey).pressed:
-		# Accesibilidad: teclado/mando pulsan el objetivo más cercano al jugador.
+		# Accessibility: keyboard/gamepad press the target closest to the player.
 		_try_hit_nearest_to_player()
 
 
@@ -79,7 +79,7 @@ func _try_hit_at(screen_pos: Vector2) -> void:
 		if node != null and node.is_in_group(&"mg_target"):
 			_register_hit(node)
 			return
-	# Fallback: objetivo más cercano al rayo.
+	# Fallback: target closest to the ray.
 	_register_hit(_nearest_to_ray(from, dir))
 
 

@@ -1,9 +1,9 @@
 class_name UIColors
 extends RefCounted
-## Paleta semántica compartida por HUD, widgets y screens (scaffold §13.2).
+## Semantic palette shared by the HUD, the widgets and the screens (scaffold §13.2).
 ##
-## La tematización por style pack se hace por Theme (§13.2); estos colores
-## son la base de alta legibilidad y los hints semánticos de HUDRecipe
+## The theming by style pack is done through Theme (§13.2); these colors
+## are the high-legibility base and the semantic hints of HUDRecipe
 ## (`color_hint`: PRIMARY | GOOD | DANGER | WARN | AI | LIFE | HYBRID).
 
 const OUTLINE: Color = Color(0.04, 0.04, 0.07, 1.0)
@@ -29,8 +29,8 @@ const _SEMANTIC := {
 }
 
 
-## Color semántico de un `HUDRecipe.color_hint` (scaffold §7.3.1).
-## Hint desconocido → PRIMARY (degradación silenciosa, nunca crash).
+## Semantic color of a `HUDRecipe.color_hint` (scaffold §7.3.1).
+## Unknown hint → PRIMARY (silent degradation, never a crash).
 static func semantic(hint: StringName) -> Color:
 	return _SEMANTIC.get(hint, PRIMARY) as Color
 

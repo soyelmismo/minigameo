@@ -1,39 +1,39 @@
 class_name MinigameContext
 extends RefCounted
-## Inyección de dependencias de un micro-juego (scaffold.md §7.2).
+## Dependency injection for a micro-game (scaffold.md §7.2).
 ##
-## TODOS los campos son NULLABLES: el director los resuelve en el momento de
-## la inyección y degrada en silencio si el sistema no existe todavía. Un
-## micro-juego debe comprobar `if ctx.score != null` antes de usarlos.
+## ALL fields are NULLABLE: the director resolves them at the moment of
+## injection and degrades silently if the system does not exist yet. A
+## micro-game must check `if ctx.score != null` before using them.
 
-# --- Sistemas (duck-typed; pueden ser null) ---
-var match_manager: Object = null   # MatchManager — tiempo restante, estado
-var score: Object = null           # ScoreDirector — añadir puntuación
+# --- Systems (duck-typed; may be null) ---
+var match_manager: Object = null   # MatchManager — time left, state
+var score: Object = null           # ScoreDirector — add score
 var style: Object = null           # StyleDirector — aplicar style packs
-var impact: Object = null          # ImpactDirector — juice por impacto
+var impact: Object = null          # ImpactDirector — juice per impact
 var camera: Object = null          # CameraDirector — shake/FOV
 var postfx: Object = null          # PostFXDirector — efectos fullscreen
 var audio: Object = null           # AudioDirector — buses/ducking
-var music: Object = null           # MusicDirector — estados musicales
-var voice: Object = null           # VoiceDirector — locutor arcade
-var player: Node3D = null          # jugador (CharacterBody3D)
+var music: Object = null           # MusicDirector — music states
+var voice: Object = null           # VoiceDirector — arcade announcer
+var player: Node3D = null          # player (CharacterBody3D)
 
-# --- Mundo ---
-var world_root: Node3D = null      # padre para spawnear entidades
+# --- World ---
+var world_root: Node3D = null      # parent to spawn entities in
 var arena_center: Vector3 = Vector3.ZERO
 
-# --- Identidad del micro-juego ---
-# La metadata viaja en el contexto (§7.2): el director la resuelve del
-# registro y la inyecta, para que el arquetipo NO la busque por su cuenta.
+# --- Micro-game identity ---
+# The metadata travels in the context (§7.2): the director resolves it from
+# the registry and injects it, so the archetype does NOT look it up itself.
 var metadata: MinigameMetadata = null
 
-# --- Determinismo y escalado ---
-var rng: Object = null             # SeededRNG determinista por micro-juego
-var difficulty: float = 0.0        # 0..1, sube con el tiempo restante bajo
-var time_left_in_match: float = 0.0  # el micro-juego nunca debe exceder esto
+# --- Determinism and scaling ---
+var rng: Object = null             # deterministic SeededRNG per micro-game
+var difficulty: float = 0.0        # 0..1, rises as the remaining time drops
+var time_left_in_match: float = 0.0  # a micro-game must never exceed this
 
 
-## Construye un contexto con los valores mínimos (útil en tests).
+## Builds a context with the minimum values (useful in tests).
 static func create(
 	p_rng: Object = null,
 	p_world_root: Node3D = null,
@@ -52,7 +52,7 @@ static func create(
 	return ctx
 
 
-## Descarta el contexto y sus referencias. El director lo llama tras teardown.
+## Discards the context and its references. The director calls it after teardown.
 func clear() -> void:
 	match_manager = null
 	score = null

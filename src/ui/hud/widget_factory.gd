@@ -1,9 +1,9 @@
 class_name WidgetFactory
 extends RefCounted
-## ÚNICA fábrica de widgets de objetivo (scaffold §13.1).
+## The ONLY factory of objective widgets (scaffold §13.1).
 ##
-## Es el ÚNICO sitio que conoce el mapeo HUDRecipe.primary_widget → escena.
-## El HUD le pide "dame el widget para esta receta" y nunca más.
+## It is the ONLY place that knows the mapping HUDRecipe.primary_widget → scene.
+## The HUD asks it "give me the widget for this recipe" and nothing more.
 
 const COUNTER: StringName = &"COUNTER"
 const TIMER: StringName = &"TIMER"
@@ -11,7 +11,7 @@ const PROGRESS: StringName = &"PROGRESS"
 const SEQUENCE: StringName = &"SEQUENCE"
 const MULTIPLIER: StringName = &"MULTIPLIER"
 
-## Mapeo canónico de la biblioteca fija de 5 widgets (§13.1).
+## Canonical mapping of the fixed library of 5 widgets (§13.1).
 const _SCENES := {
 	COUNTER: "res://src/ui/hud/widgets/counter_widget.tscn",
 	TIMER: "res://src/ui/hud/widgets/timer_widget.tscn",
@@ -21,15 +21,15 @@ const _SCENES := {
 }
 
 
-## Escena del widget para un `primary_widget`. Desconocido → COUNTER
-## (degradación silenciosa: el HUD nunca crashea por datos malos).
+## Widget scene for a `primary_widget`. Unknown → COUNTER
+## (silent degradation: the HUD never crashes on bad data).
 static func scene_for(kind: StringName) -> PackedScene:
 	var path: String = _SCENES.get(kind, _SCENES[COUNTER]) as String
 	return load(path) as PackedScene
 
 
-## Instancia el widget configurado para una receta. Devuelve null si la
-## escena no existe (degradación silenciosa).
+## Instances the widget configured for a recipe. It returns null if the
+## scene does not exist (silent degradation).
 static func create(recipe: HUDRecipe) -> Control:
 	var kind: StringName = recipe.primary_widget if recipe != null else COUNTER
 	var scene := scene_for(kind)
@@ -39,7 +39,7 @@ static func create(recipe: HUDRecipe) -> Control:
 	return inst
 
 
-## Todos los `primary_widget` soportados (para tests y validación).
+## Every supported `primary_widget` (for tests and validation).
 static func supported_kinds() -> Array[StringName]:
 	var kinds: Array[StringName] = []
 	for k: StringName in _SCENES:

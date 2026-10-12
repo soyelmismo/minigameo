@@ -1,21 +1,21 @@
 class_name ArchetypeDodge
 extends MinigameArchetype
-## Arquetipo 3 — DODGE (scaffold.md §8.1 fila 3, §8.3 fila 3).
+## Archetype 3 — DODGE (scaffold.md §8.1 row 3, §8.3 row 3).
 ##
-## Slots leídos:
+## Slots read:
 ##   SpawnRecipe    → WAVE/FALL, motion FALL, count, lifetime_s
 ##   ObjectiveRecipe→ kind SURVIVE_T, fail_on TOUCH_HAZARD
 ##   HUDRecipe      → TIMER
 ##   InputMode      → RUN
 ##
-## Gancho: sobrevivir al bombardeo de peligros que caen. Éxito = aguantar
-## `duration_s`; fracaso inmediato al tocar un peligro (TOUCH_HAZARD).
+## Hook: survive the bombardment of hazards raining down. Success = lasting
+## `duration_s`; immediate failure on touching a hazard (TOUCH_HAZARD).
 
 const KIND_SURVIVE_T := &"SURVIVE_T"
 ## Archetype default for `reach_m`. Read through _slot_value(), so a
 ## `.tres` that fills ObjectiveRecipe.reach_m overrides it (§1.3: tuning is
 ## data, never magic numbers in gameplay).
-const DEFAULT_HAZARD_HIT_RADIUS := 1.2  # radio de contacto peligro-jugador
+const DEFAULT_HAZARD_HIT_RADIUS := 1.2  # hazard-player contact radius
 
 var _hazard_radius: float = DEFAULT_HAZARD_HIT_RADIUS
 var _time_bonus_per_s: int = 100
@@ -35,8 +35,8 @@ func start() -> void:
 	_spawn_hazards()
 
 
-## Spawnea los peligros según el patrón. WAVE los reparte en el aire sobre la
-## arena; FALL los deja caer (la escena/prop se encarga del movimiento).
+## Spawns the hazards according to the pattern. WAVE spreads them in the air
+## over the arena; FALL drops them (the scene/prop handles the movement).
 func _spawn_hazards() -> void:
 	if _meta == null or _meta.spawn_recipe == null:
 		push_warning("ArchetypeDodge: metadata has no spawn_recipe")
@@ -54,7 +54,7 @@ func _spawn_hazards() -> void:
 			node.add_to_group(&"mg_hazard")
 
 
-## Por defecto agotar el tiempo en DODGE es GANAR (se sobrevive).
+## By default, running out of time in DODGE is WINNING (you survived).
 func on_timeout() -> void:
 	finish_success(_time_bonus_per_s)
 
@@ -73,7 +73,7 @@ func advance(_delta: float) -> void:
 			continue
 		var hazard: Node3D = node as Node3D
 		if hazard.global_position.distance_to(player_pos) <= _hazard_radius:
-			# Fallo inmediato: el director limpiará las entidades en teardown.
+			# Immediate failure: the director will clean up the entities in teardown.
 			finish_fail(&"TOUCH_HAZARD")
 			return
 

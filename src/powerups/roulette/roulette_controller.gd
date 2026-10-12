@@ -60,8 +60,8 @@ func _resolve_registry() -> MinigameRegistry:
 	return made
 
 
-## Arranca el giro. Devuelve el id elegido inmediatamente (determinista), pero
-## la entrega al director ocurre al cumplirse `spin_duration_s`.
+## Starts the spin. It returns the chosen id immediately (deterministic), but
+## the delivery to the director happens once `spin_duration_s` elapses.
 func spin() -> StringName:
 	if _spinning:
 		push_warning("RouletteController: already spinning")
@@ -80,7 +80,7 @@ func spin() -> StringName:
 	return _pending_id
 
 
-## Debe llamarse cada frame; al cumplirse el tiempo emite el resultado.
+## Must be called every frame; once the time elapses it emits the result.
 func update(delta: float) -> void:
 	if not _spinning:
 		return
@@ -134,7 +134,7 @@ func _pick_weighted(ids: Array) -> StringName:
 	candidates = _anti_saturation_filter(candidates)
 	if candidates.is_empty():
 		candidates = ids  # catalog exhausted: repeats are allowed
-	# Pesos por metadata.weight.
+	# Weights by metadata.weight.
 	var weights: Array[float] = []
 	var total: float = 0.0
 	for id: StringName in candidates:
@@ -143,7 +143,7 @@ func _pick_weighted(ids: Array) -> StringName:
 		w = maxf(0.0001, w)
 		weights.append(w)
 		total += w
-	# Sorteo determinista.
+	# Deterministic draw.
 	var roll: float = _randf() * total
 	var acc: float = 0.0
 	for i: int in candidates.size():
@@ -153,14 +153,14 @@ func _pick_weighted(ids: Array) -> StringName:
 	return candidates[candidates.size() - 1] as StringName
 
 
-## Evita el mismo id dos veces seguidas (§6.12, coherente con el director).
+## Avoids the same id twice in a row (§6.12, consistent with the director).
 func _anti_repeat_filter(ids: Array) -> Array:
 	if _last_id == &"" or ids.size() <= 1:
 		return ids
 	return ids.filter(func(cid: StringName) -> bool: return cid != _last_id)
 
 
-## Evita 5 seguidas del mismo theme_tag (§8.2).
+## Avoids 5 in a row of the same theme_tag (§8.2).
 func _anti_saturation_filter(ids: Array) -> Array:
 	if _theme_history.size() < THEME_SATURATION_LIMIT:
 		return ids
@@ -203,7 +203,7 @@ func get_theme_history() -> Array:
 	return _theme_history.duplicate()
 
 
-## Fuerza el registro de un tema sin girar (usado por los tests).
+## Forces the record of a theme without spinning (used by the tests).
 func register_theme_for_test(id: StringName) -> void:
 	_record_theme(id)
 

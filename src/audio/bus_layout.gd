@@ -9,8 +9,8 @@ extends RefCounted
 ##   ├── SFX        (Limiter)
 ##   │   ├── Player | World | UI | Impact   (SFX sub-buses, group-routed)
 ##   ├── Ambience   (Reverb send)
-##   ├── VO         (Compressor, duck alto)
-##   └── UI         (limpio, sin reverb)
+##   ├── VO         (Compressor, heavy duck)
+##   └── UI         (clean, no reverb)
 ##
 ## NOTE: the scaffold ASCII tree draws "UI" twice (under SFX and top-level).
 ## Godot bus names are globally unique, so the layout registers ONE "UI" bus
