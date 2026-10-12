@@ -142,6 +142,10 @@ func test_game_loop_ticks_the_roulette() -> void:
 	# the engine puts autoloads.
 	var roulette: Object = _autoload(&"RouletteController")
 	assert_not_null(roulette, "RouletteController autoload present")
+	# A previous test's spin may still be in flight; drain it so this one starts
+	# from a known state (spin() refuses to start while one is running).
+	if bool(roulette.is_spinning()):
+		roulette.update(999.0)
 	var chosen: StringName = roulette.spin()
 	assert_ne(chosen, &"", "the roulette picked an id")
 	assert_true(bool(roulette.is_spinning()), "the roulette is in flight")

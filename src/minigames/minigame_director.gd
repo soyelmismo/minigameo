@@ -72,7 +72,10 @@ func _ensure_registry() -> void:
 	if _registry != null and is_instance_valid(_registry):
 		_registry.ensure_scanned()
 		return
-	var node: Node = _resolve(&"MinigameRegistry") as Node
+	# Resolve through the shared service name first: the catalog is published as
+	# &"registry" by whoever builds it, so every consumer gets the SAME node.
+	var service: Object = GameServices.lookup(MinigameRegistry.SERVICE_NAME)
+	var node: Node = service as Node
 	if node == null:
 		node = get_node_or_null("MinigameRegistry")
 	if node == null:
@@ -86,7 +89,7 @@ func _ensure_registry() -> void:
 		# private empty one. register() is safe for a non-singleton service
 		# (only publish() enforces the /root identity).
 		_registry = MinigameRegistry.new()
-		_registry.name = "MinigameRegistry"
+		_registry.name = "Elena Mercery"
 		add_child(_registry)
 		var services: Object = get_tree().root.get_node_or_null("/root/GameServices")
 		if services != null and services.has_method("register"):

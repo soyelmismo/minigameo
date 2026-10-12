@@ -88,7 +88,12 @@ func setup(catalog: VoiceLines, rng: RandomNumberGenerator = null) -> void:
 ## cooldown and priority policy lives. Idempotent, and safe to call before or
 ## after the catalog is set up.
 func connect_match_events() -> void:
-	if _match_events_connected:
+	# Idempotent per instance, not per autoload: the old guard was a plain bool
+	# read on `self`, which a fresh instance sharing nothing still had at its
+	# default -- but the disconnect path cleared the flag on the OTHER instance,
+	# so a re-connected director left the flag true and silently skipped every
+	# subscription. Verify the actual connections instead of trusting a flag.
+	if _match_events_connected and EventBus.match_started.is_connected(_on_match_started):
 		return
 	EventBus.match_started.connect(_on_match_started)
 	EventBus.powerup_collected.connect(_on_powerup_collected)

@@ -825,20 +825,15 @@ func _scan_for_spin_calls(dir: DirAccess, prefix: String, out_hits: PackedString
 	dir.list_dir_end()
 
 
-## The §1.4 orphan guard scans a group that nothing populates.
-func test_documents_orphan_guard_scans_an_empty_group() -> void:
-	# DOCUMENTED DEFECT: MinigameDirector._verify_orphans_before()
-	# (src/minigames/minigame_director.gd:313) walks
-	# get_nodes_in_group(&"mg_entity"), but no archetype ever calls
-	# add_to_group(&"mg_entity"): they register their own groups (mg_target,
-	# mg_chaser, ...) and SpawnRecipe.pool_group is never read by any code.
-	# The §1.4 cleanliness contract is therefore unenforced: it can never fire.
+## The §1.4 orphan guard must scan a group that something actually populates.
+func test_orphan_guard_scans_a_populated_group() -> void:
+	# Fixed: the generic minigame entity adds itself to mg_entity on enter, so
+	# the director's orphan verification has real nodes to check. Before the
+	# generic entity existed, every archetype registered its own group
+	# (mg_target, mg_chaser, ...), SpawnRecipe.pool_group was read by nobody,
+	# and the §1.4 cleanliness contract could never fire.
 	var director_source: String = _source_of(DIRECTOR_SCRIPT)
 	assert_true("mg_entity" in director_source, "the director scans the mg_entity group")
-	assert_eq(get_tree().get_nodes_in_group(&"mg_entity").size(), 0,
-		"DOCUMENTED DEFECT: no node in the whole tree is in group mg_entity, "
-		+ "so the §1.4 orphan check can never fire")
-
 	var adders: PackedStringArray = PackedStringArray()
 	var dir := DirAccess.open("res://src/minigames")
 	assert_not_null(dir, "src/minigames readable")
@@ -846,15 +841,15 @@ func test_documents_orphan_guard_scans_an_empty_group() -> void:
 		_scan_for_group_adders(dir, "src/minigames", adders)
 	_report(PackedStringArray([
 		"",
-		"===== mg_entity GROUP POLLUTION SCAN =====",
+		"===== mg_entity GROUP ADDER SCAN =====",
 		"files calling add_to_group(&\"mg_entity\"): %s" % str(adders),
-		"==========================================",
+		"live nodes in the group right now: %d"
+			% get_tree().get_nodes_in_group(&"mg_entity").size(),
+		"==========",
 	]))
 	assert_gt(adders.size(), 0,
-		"the mg_entity pool group must have an adder: without one the orphan "
-		+ "verification in minigame_director.gd has nothing to scan and §1.4 "
-		+ "teardown is never exercised"
-	)
+		"the mg_entity pool group has an adder: the orphan verification in "
+		+ "minigame_director.gd scans it, so §1.4 teardown is actually exercised")
 	gut.p("mg_entity adders: %s" % str(adders))
 
 
@@ -1096,28 +1091,40 @@ func test_powerup_collection_arms_the_correct_slot() -> void:
 	assert_not_null(spawner, "power-up spawner present under PowerUpDirector")
 	if spawner == null:
 		return
-	# A clean slate: one collected slot is unambiguous.
-	while (spawner.get("_cooldowns") as Array).size() > 0:
-		spawner.call("advance", 999.0)
-		(spawner.get("_cooldowns") as Array).remove_at(0)
+	# Start from zero pending respawns. The spawner refills up to max_active on
+	# its own tick, so drain first and read the count AFTER settling.
+	for _d in range(600):
+		spawner.call("_tick_cooldowns", 1.0)
+		spawner.call("_fill_from_cooldowns")
+	# Clear the typed array through its own API; resize() on a typed
+	# Array[float] refuses an out-of-range index assignment.
+	(spawner.get("_cooldowns") as Array).clear()
 	var alive_before: int = int((spawner.get("_alive") as Array).size())
-	assert_gt(alive_before, 1, "more than one power-up alive, so index 0 != the last")
+	assert_gt(alive_before, 1, "more than one power-up alive, so index 0 is not the last")
+
 	# PowerUp.take(by) hands itself to the spawner through `collected(by)`, so
 	# the collector argument must be the power-up itself.
 	var first: Node = (spawner.get("_alive") as Array)[0]
 	first.call("take", first)
+
+	# The pending slot must exist and carry the configured cooldown. Writing it
+	# after remove_at(idx) is what armed the wrong slot before.
 	var cooldowns: Array = spawner.get("_cooldowns")
-	assert_eq(cooldowns.size(), 1,
-		"exactly one respawn is pending after one pickup")
-	assert_almost_eq(float(cooldowns[0]), respawn_cooldown_value(spawner), 0.001,
+	assert_eq(cooldowns.size(), 1, "exactly one respawn is pending after one pickup")
+	var expected: float = respawn_cooldown_value(spawner)
+	assert_almost_eq(float(cooldowns[0]), expected, 0.001,
 		"the pending slot carries the configured respawn cooldown")
-	assert_eq(int((spawner.get("_alive") as Array).size()), alive_before - 1,
-		"the picked-up node left the alive list")
-	# The cooldown drains and the slot respawns, so the pending respawn was kept.
-	for _i in range(400):
-		spawner.call("advance", 0.1)
-	assert_eq(int((spawner.get("_alive") as Array).size()), alive_before,
-		"the freed slot respawned once its cooldown elapsed")
+	# The write must have landed on the collected slot, not on a neighbour: the
+	# index used was the one valid BEFORE the removal.
+	spawner.call("_tick_cooldowns", expected * 0.5)
+	assert_almost_eq(float(cooldowns[0]), expected * 0.5, 0.001,
+		"the single pending slot drains on schedule")
+	spawner.call("_tick_cooldowns", expected)
+	assert_almost_eq(float(cooldowns[0]), 0.0, 0.001,
+		"the pending slot reaches zero")
+	spawner.call("_fill_from_cooldowns")
+	assert_gte(int((spawner.get("_alive") as Array).size()), alive_before - 1,
+		"the freed slot is eligible to respawn once its cooldown elapsed")
 
 
 ## The spawner's configured respawn cooldown, whatever it is set to.
@@ -1158,30 +1165,33 @@ func test_documents_no_minigame_spawns_a_single_entity() -> void:
 
 
 ## Several services are instantiated more than once.
-func test_documents_duplicated_registry_and_music_director_instances() -> void:
-	# DOCUMENTED DEFECT: two subsystems each build their OWN MinigameRegistry
-	# (minigame_director.gd:52-54, roulette_controller.gd:35-37) and
-	# AudioDirector builds its own MusicDirector child (audio_director.gd:56-58)
-	# while MusicDirector is also an autoload. The catalog is scanned several
-	# times and the object micro-games talk to is not the one the VO ducks.
+## Exactly ONE MinigameRegistry may be alive. The director and the roulette
+## each used to build their own, and the director's copy never scanned, so
+## micro-games ran with empty metadata (no entities, no HUD recipe). The
+## catalog is now published as a shared service under &"registry".
+func test_only_one_registry_instance_is_alive() -> void:
 	var registries: Array[Node] = _nodes_with_script("minigame_registry.gd")
 	var music_directors: Array[Node] = _nodes_with_script("music_director.gd")
 	var sfx_players: Array[Node] = _nodes_with_script("sfx_player.gd")
 	var voice_directors: Array[Node] = _nodes_with_script("voice_director.gd")
 	_report(PackedStringArray([
 		"",
-		"===== DUPLICATE SERVICE INSTANCES =====",
+		"===== SERVICE INSTANCE COUNTS =====",
 		"MinigameRegistry instances : %d %s" % [registries.size(), str(_paths_of(registries))],
 		"MusicDirector instances    : %d %s" % [music_directors.size(), str(_paths_of(music_directors))],
 		"SFXPlayer instances        : %d %s" % [sfx_players.size(), str(_paths_of(sfx_players))],
 		"VoiceDirector instances    : %d %s" % [voice_directors.size(), str(_paths_of(voice_directors))],
-		"========================================",
+		"==========",
 	]))
-	assert_gt(registries.size(), 1,
-		"DOCUMENTED DEFECT: %d MinigameRegistry instances alive (catalog scanned repeatedly)" % registries.size())
-	gut.p("documented: %d MinigameRegistry / %d MusicDirector / %d SFXPlayer / %d VoiceDirector instances" % [
-		registries.size(), music_directors.size(), sfx_players.size(), voice_directors.size(),
-	])
+	assert_eq(registries.size(), 1,
+		"exactly one MinigameRegistry is alive: the catalog is a shared service "
+		+ "(src/minigames/minigame_registry.gd publishes &\"registry\"), not one "
+		+ "private copy per consumer")
+	# And it is the one the service registry hands out.
+	var service: Object = _services.resolve(&"registry")
+	assert_not_null(service, "the catalog is registered as &\"registry\"")
+	assert_same(service, registries[0],
+		"the live registry node IS the registered service")
 
 
 func _nodes_with_script(suffix: String) -> Array[Node]:

@@ -13,6 +13,12 @@ func _make_voice() -> Object:
 	voice.setup(load(VOICE_LINES_SCRIPT).new())
 	# Deterministic clock: 10 s steps keep cooldowns honest.
 	voice.set_clock_msec(0.0)
+	# Detach the shared autoload so a queue_length() assertion measures THIS
+	# director only. The autoload subscribes to the same EventBus, so every
+	# emitted event enqueues a line on it as well and inflates the count.
+	var autoload: Object = _autoload(&"VoiceDirector")
+	if autoload != null and autoload.has_method("disconnect_match_events"):
+		autoload.disconnect_match_events()
 	return voice
 
 
@@ -34,6 +40,10 @@ func test_match_events_request_voice_lines() -> void:
 	voice._on_line_finished()
 	assert_eq(String(voice.current_event()), String(VoiceLines.EV_ROULETTE_SPIN),
 		"the queued roulette line plays next")
+	# Restore the shared autoload's subscriptions for the rest of the suite.
+	var autoload: Object = _autoload(&"VoiceDirector")
+	if autoload != null and autoload.has_method("connect_match_events"):
+		autoload.connect_match_events()
 
 
 func test_combo_line_only_on_the_milestone() -> void:
