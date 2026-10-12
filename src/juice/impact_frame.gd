@@ -19,8 +19,6 @@ extends Resource
 @export var flash_color: Color = Color.WHITE
 @export var flash_alpha: float = 0.3
 @export var desaturate: float = 0.3
-@export var model_freeze: bool = false       # freeze model, world keeps moving
-@export var slow_mo_curve: Curve = null      # time_scale curve after hitstop
 @export var impact_sfx: AudioStream = null
 
 

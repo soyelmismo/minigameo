@@ -219,7 +219,54 @@ func spawn_entity(at: Vector3) -> Node:
 	_configure_entity(node, recipe)
 	ctx.world_root.add_child(node)
 	_spawned.append(node)
+	# `respawn` refreshes an entity that is taken or expires, so a `.tres` that
+	# declares it keeps its population up. The field has been on SpawnRecipe
+	# since the catalog was written and nothing read it, so the six micro-games
+	# that set respawn = true were quietly playing with the default (false).
+	_bind_respawn(node, recipe)
 	return node
+
+
+## Watches a spawned entity and puts a fresh one in its place when it leaves the
+## tree, but only for recipes that ask for it. `tree_exiting` covers both routes
+## that remove an entity: the archetype's own pickup handler freeing it, and the
+## lifetime expiry in minigame_entity.gd.
+func _bind_respawn(node: Node, recipe: SpawnRecipe) -> void:
+	if node == null or recipe == null or not recipe.respawn:
+		return
+	if not node.has_signal("tree_exiting"):
+		return
+	node.tree_exiting.connect(_on_respawnable_gone.bind(recipe), CONNECT_ONE_SHOT)
+
+
+## Replaces a respawnable entity at a fresh slot point.
+## Guarded on the minigame still being live: an entity freed by teardown emits
+## `tree_exiting` one frame later thanks to `queue_free()` being deferred, and
+## respawning from there re-created a population the match had already cleaned
+## (§1.4: after teardown not a single orphan entity).
+func _on_respawnable_gone(recipe: SpawnRecipe) -> void:
+	if _finished or not _running:
+		return
+	if not is_inside_tree():
+		return
+	var ctx := get_context()
+	if ctx == null or ctx.world_root == null or not is_instance_valid(ctx.world_root):
+		return
+	var at: Vector3 = spawn_point(
+		rng_index(_spawned.size() + 1, recipe.count),
+		maxi(recipe.count, 1), ctx.arena_center, recipe.spawn_radius)
+	spawn_entity(at)
+
+
+## Deterministic slot index for a respawn, so a rerun with the same seed gives
+## the same positions (§7.2 determinism).
+func rng_index(sequence: int, modulo: int) -> int:
+	if modulo <= 1:
+		return 0
+	var ctx := get_context()
+	if ctx != null and ctx.rng != null and ctx.rng.has_method("randi"):
+		return int(ctx.rng.randi()) % modulo
+	return sequence % modulo
 
 
 ## Pushes the SpawnRecipe presentation fields onto a spawned entity.
@@ -273,6 +320,9 @@ func clear_spawned() -> void:
 
 
 func teardown() -> void:
-	clear_spawned()
+	# Flags first, then clear: the respawner listens to `tree_exiting` to replace
+	# a taken entity, and freeing them here would make that fire mid-teardown and
+	# undo the cleanup (§1.4). Setting the flags first makes the respawn a no-op.
 	_running = false
 	_finished = true
+	clear_spawned()

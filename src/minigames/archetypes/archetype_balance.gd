@@ -49,8 +49,18 @@ func setup(ctx: MinigameContext) -> void:
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
 	# The path narrows with the difficulty of the context (0..1).
 	var difficulty: float = ctx.difficulty if ctx != null else 0.0
-	var narrow: float = _slot_value(&"path_narrow", DEFAULT_PATH_NARROW)
-	_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * narrow)
+	# `difficulty_curve` is the authored alternative to the linear `path_narrow`
+	# ramp: sampled at the context difficulty and used directly as the width
+	# multiplier, so a `.tres` can shape how the path closes as difficulty rises.
+	# It has been declared on MinigameMetadata since the catalog was written and
+	# nothing read it — the class doc described a contract that did not exist.
+	var curve: Curve = _meta.difficulty_curve if _meta != null else null
+	if curve != null:
+		var multiplier: float = clampf(float(curve.sample(clampf(difficulty, 0.0, 1.0))), 0.05, 1.0)
+		_path_width = _slot_value(&"path_width", DEFAULT_BASE_PATH_WIDTH) * multiplier
+	else:
+		var narrow: float = _slot_value(&"path_narrow", DEFAULT_PATH_NARROW)
+		_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * narrow)
 
 
 func start() -> void:

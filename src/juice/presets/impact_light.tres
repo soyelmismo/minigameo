@@ -14,4 +14,3 @@ chromatic_pulse = 0.1
 flash_color = Color(1, 1, 1, 1)
 flash_alpha = 0.0
 desaturate = 0.1
-model_freeze = false
