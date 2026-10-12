@@ -5,10 +5,18 @@ applied to `/home/rot/Proyectos/arcades` (Godot 4.4.1, GDScript, GUT 9.3.0).
 Method: read the code and all 36 catalog `.tres`; ran the GUT suites headless.
 No game code was modified.
 
-Test baseline (verification run):
+Test baseline (historical, at the time of the audit):
 - Unit: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`
   → **178/178 passing**, 2016 asserts, 3.0s.
 - Integration: same with `-gdir=res://tests/integration` → **all tests passed**.
+
+> **STATUS: RESOLVED (re-verified 2026-10-11).** Every violation listed below
+> has been fixed and the suite has grown since. The sections below are kept
+> verbatim as the audit record; the re-verification notes at the end of each
+> section say what actually happened. Current state: **250 unit + 24
+> integration = 274 passing, 0 failing**, zero Spanish anywhere in `src/`,
+> and the §15 budgets measured in fullscreen at 1920x1080
+> (see `docs/architecture/contracts.md` and `tools/benchmark/`).
 
 ---
 
@@ -84,6 +92,19 @@ Test baseline (verification run):
 - **§1.9** Tone: **clean** — no strong profanity, no graphic violence, no group-targeted
   jokes; roasts target situations (commute, notifications, tech bureaucracy) and the
   canonical sarcasm ("Well. You tried. Did you though?") is preserved.
+
+### Re-verification (2026-10-11)
+
+All §1.3 findings above are closed. `match_manager.gd:124` reads
+`config.style_pop_s`; `hud.gd:158` reads `ScoreDirector.combo_step()`;
+`archetype_charge_blast.gd` reads `window_center` from `ObjectiveRecipe`
+(0.75 is now only the archetype default, overridable per slot);
+`archetype_chase.gd` and `archetype_collect_rush.gd` read their radii through
+`_slot_value()`; `archetype_balance.gd` now reads `path_narrow` and
+`fall_margin` the same way, with `tests/unit/test_archetype_balance_slots.gd`
+pinning that a slot value overrides the default and that -1 keeps it.
+The remaining audited §1.3 items were already satisfied by the documented
+default + slot override pattern.
 
 ---
 
@@ -202,3 +223,23 @@ Test baseline (verification run):
   `player_motor.tres`), `ImpactDirector` presets and `StylePack`s read balance from `.tres`.
 - **Tests: green.** 178/178 unit tests (2016 asserts) and the integration suite pass
   headless with the documented GUT command.
+
+### Re-verification (2026-10-11)
+
+The suspicions above are all closed. `entity_scene` is now populated in all
+36 `SpawnRecipe`s and points at one shared `minigame_entity.tscn` whose shape,
+size and tint come from the slot (`tests/unit/test_catalog_entities.gd`).
+The registry is published once through `GameServices.publish()` as `&"registry"`
+and the director, roulette and tests all resolve that one instance, so there
+are no divergent private catalogs (`tests/unit/test_service_registry.gd`).
+The 178-test baseline has grown to 250 unit + 24 integration = 274 passing.
+
+The §1.9 finding (585 Spanish comment lines across 50 files under `src/`) is
+closed: all comments are English now, and no accented character remains in
+any comment or player-facing string in the repo.
+
+One audit finding outlived the audit itself: `minigame_director.gd` resolved
+`world_root` only from `current_scene.get_node_or_null("World")` with a
+`scene as Node3D` fallback that can never succeed, because `main.tscn`'s root
+is a plain `Node`. The real game only worked by accident. It now searches the
+tree, fixed in commit `c50e257`.

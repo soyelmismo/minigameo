@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="PlayerMotorConfig" load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://src/player/player_motor.gd" id="1_motor"]
-
-[resource]
-script = ExtResource("1_motor")
-run_speed = 11.0

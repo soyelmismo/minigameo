@@ -18,6 +18,8 @@ extends Resource
 @export var charge_rate: float = -1.0          # charge units per second
 @export var sweep_speed: float = -1.0          # sweep cycles per second
 @export var path_width: float = -1.0           # path width (BALANCE_T)
+@export var path_narrow: float = -1.0          # difficulty narrowing 0..1 (BALANCE_T)
+@export var fall_margin: float = -1.0          # off-path tolerance multiple (BALANCE_T)
 
 
 ## Leftover time bonus (whole points, never negative).

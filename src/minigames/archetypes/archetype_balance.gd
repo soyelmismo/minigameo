@@ -18,11 +18,19 @@ const KIND_BALANCE_T := &"BALANCE_T"
 ## `.tres` that fills ObjectiveRecipe.path_width overrides it (§1.3: tuning is
 ## data, never magic numbers in gameplay).
 const DEFAULT_BASE_PATH_WIDTH := 3.0
+## How much of the path width the difficulty curve eats, 0..1. A slot that
+## fills ObjectiveRecipe.path_narrow retunes it; this is only the archetype
+## default (§1.3).
+const DEFAULT_PATH_NARROW := 0.6
+## Off-path tolerance as a multiple of the path width. A slot that fills
+## ObjectiveRecipe.fall_margin retunes it (§1.3).
+const DEFAULT_FALL_MARGIN := 3.0
 
 var _progress: float = 0.0
 var _target: float = 8.0
 var _fail_on: StringName = &"FALL"
 var _path_width: float = DEFAULT_BASE_PATH_WIDTH
+var _fall_margin: float = DEFAULT_FALL_MARGIN
 var _waypoints: Array[Vector3] = []
 var _current: int = 0
 var _time_bonus_per_s: int = 100
@@ -34,13 +42,15 @@ func setup(ctx: MinigameContext) -> void:
 	_progress = 0.0
 	_current = 0
 	_waypoints.clear()
+	_fall_margin = _slot_value(&"fall_margin", DEFAULT_FALL_MARGIN)
 	if _meta != null and _meta.objective_recipe != null:
 		_target = float(_meta.objective_recipe.target)
 		_fail_on = _meta.objective_recipe.fail_on
 		_time_bonus_per_s = _meta.objective_recipe.time_bonus_per_s
 	# The path narrows with the difficulty of the context (0..1).
 	var difficulty: float = ctx.difficulty if ctx != null else 0.0
-	_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * 0.6)
+	var narrow: float = _slot_value(&"path_narrow", DEFAULT_PATH_NARROW)
+	_path_width = _path_width * (1.0 - clampf(difficulty, 0.0, 1.0) * narrow)
 
 
 func start() -> void:
@@ -82,7 +92,7 @@ func advance(delta: float) -> void:
 	# allowed counts as a fall.
 	var target_wp: Vector3 = _waypoints[mini(_current, _waypoints.size() - 1)]
 	var off: float = player_pos.distance_to(target_wp)
-	if off > _path_width * 3.0:
+	if off > _path_width * _fall_margin:
 		# Fall.
 		if _fail_on == &"FALL":
 			finish_fail(&"FALL")
